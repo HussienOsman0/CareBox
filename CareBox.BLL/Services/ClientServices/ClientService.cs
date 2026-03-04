@@ -44,8 +44,8 @@ namespace CareBox.BLL.Services.ClientServices
             return new ClientProfileDto
             {
                 FullName = client.FullName,
-                Address = client.Address,
-                ClientImageUrl = client.ClientImageUrl,
+                Address = client.Address ??"no Address",
+                ClientImageUrl = client.ClientImageUrl?? "no Image",
                 Email = client.AppUser.Email,
                 PhoneNumber = client.AppUser.PhoneNumber
             };
