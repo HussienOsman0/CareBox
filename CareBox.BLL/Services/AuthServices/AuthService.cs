@@ -44,167 +44,239 @@ namespace CareBox.BLL.Services.AuthServices
         #region RegisterClient
         public async Task<AuthResponseDto> RegisterClientAsync(RegisterClientDto model)
         {
-            // 1. التأكد إن الإيميل مش موجود قبل كده
-            if (await _userManager.FindByEmailAsync(model.Email) != null)
-                return new AuthResponseDto { Message = "Email is already registered!" };
-            
-                // 2. إنشاء الـ User (Identity)
-                var user = new AppUser
+            // 1. البحث عن المستخدم أولاً للتحقق من حالته
+            var existingUser = await _userManager.FindByEmailAsync(model.Email);
+
+            if (existingUser != null)
+            {
+                // الحالة أ: المستخدم موجود ومفعل حسابه بالفعل -> نرفض التسجيل
+                if (existingUser.EmailConfirmed)
                 {
-                    Email = model.Email,
-                    UserName = model.Email, // بنستخدم الإيميل كاسم مستخدم
-                    PhoneNumber = model.PhoneNumber,
-                    SecurityStamp = Guid.NewGuid().ToString() // مهم جداً للأمان
-                };
-
-                var result = await _userManager.CreateAsync(user, model.Password);
-
-                if (!result.Succeeded)
-                {
-                    var errors = new List<string>();
-                    foreach (var error in result.Errors)
-                        errors.Add(error.Description);
-
-                    return new AuthResponseDto { Message = "Registration Failed", Errors = errors };
+                    return new AuthResponseDto { Message = "Email is already registered!" };
                 }
 
-                // 3. تعيين دور (Role) - اختياري بس مفيد
-                await _userManager.AddToRoleAsync(user, "Client"); // تأكد إن الـ Role "Client" موجود في الداتابيز
-
-                // 4. إنشاء الـ Client Profile وربطه بالـ User
-                var client = new Client
+                // الحالة ب: المستخدم موجود بس لسه مفعلش (بسبب كراش أو خرج من التطبيق) -> نعيد إرسال الـ OTP
+                else
                 {
-                    AppUserId = user.Id, // هنا الربط 1:1
-                    FullName = model.FullName,
-                    CreatedAt = DateTime.UtcNow
-                };
+                    // توليد OTP جديد
+                    var newOtp = new Random().Next(100000, 999999).ToString();
 
-                try
-                {
-                    // بنستخدم الـ UnitOfWork لإضافة الـ Client
-                    await _unitOfWork.Clients.AddAsync(client);
-                    await _unitOfWork.SaveAsync();
+                    // تحديث البيانات في الداتابيز
+                    existingUser.OTPCode = newOtp;
+                    existingUser.OTPExpiryTime = DateTime.UtcNow.AddMinutes(30);
+                    await _userManager.UpdateAsync(existingUser);
+
+                    // إرسال الإيميل مرة أخرى
+                    var resendEmailBody = $@"
+                    <h3>Welcome Back to CareBox Partner Program!</h3>
+                    <p>It seems you didn't verify your account. Here is a new code:</p>
+                    <h2 style='color:green;'>{newOtp}</h2>";
+
+                    await _emailService.SendEmailAsync(existingUser.Email, "Verify Your Provider Account (Resend)", resendEmailBody);
+
+                    // نرجع رد نجاح عشان الموبايل يوجه اليوزر لصفحة الـ OTP
+                    return new AuthResponseDto
+                    {
+                        IsAuthenticated = false,
+                        Message = "User registered successfully. Please check your email for the OTP.",
+                        Email = existingUser.Email
+                    };
                 }
-                catch (Exception ex)
-                {
-                    // لو حصل مشكلة في حفظ الـ Client، لازم نمسح الـ User عشان ميحصلش بيانات معلقة
-                    await _userManager.DeleteAsync(user);
-                    return new AuthResponseDto { Message = "Failed to create client profile: " + ex.Message };
-                }
+            }
 
-                // 5. توليد OTP (6 أرقام عشوائية)
-                var otp = new Random().Next(100000, 999999).ToString();
+            // --- من هنا بيبدأ كود التسجيل الجديد (لو المستخدم مش موجود خالص) ---
 
-                // 6. حفظ الـ OTP في الداتابيز
-                user.OTPCode = otp;
-                user.OTPExpiryTime = DateTime.UtcNow.AddMinutes(30); // صلاحية 30 دقايق
-                await _userManager.UpdateAsync(user);
+            // 2. إنشاء الـ User (Identity)
+            var user = new AppUser
+            {
+                Email = model.Email,
+                UserName = model.Email, // بنستخدم الإيميل كاسم مستخدم
+                PhoneNumber = model.PhoneNumber,
+                SecurityStamp = Guid.NewGuid().ToString() // مهم جداً للأمان
+            };
 
-                // 7. إرسال الإيميل
-                var emailBody = $@"
-                <h3>Welcome to CareBox!</h3>
-                <p>Thanks for registering. Please use the code below to verify your account:</p>
-                <h2 style='color:blue;'>{otp}</h2>
-                <p>This code is valid for 10 minutes.</p>";
+            var result = await _userManager.CreateAsync(user, model.Password);
 
-                await _emailService.SendEmailAsync(user.Email, "CareBox Verification Code", emailBody);
+            if (!result.Succeeded)
+            {
+                var errors = new List<string>();
+                foreach (var error in result.Errors)
+                    errors.Add(error.Description);
 
-                return new AuthResponseDto
-                {
-                    IsAuthenticated = false, // لسه مش Authenticated لحد ما يعمل Verify
-                    Message = "User registered successfully. Please check your email for the OTP.",
-                    Email = user.Email
-                };
+                return new AuthResponseDto { Message = "Registration Failed", Errors = errors };
+            }
 
+            // 3. تعيين دور (Role)
+            await _userManager.AddToRoleAsync(user, "Client");
+
+            // 4. إنشاء الـ Client Profile وربطه بالـ User
+            var client = new Client
+            {
+                AppUserId = user.Id, // هنا الربط 1:1
+                FullName = model.FullName,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            try
+            {
+                // بنستخدم الـ UnitOfWork لإضافة الـ Client
+                await _unitOfWork.Clients.AddAsync(client);
+                await _unitOfWork.SaveAsync();
+            }
+            catch (Exception ex)
+            {
+                // لو حصل مشكلة في حفظ الـ Client، لازم نمسح الـ User عشان ميحصلش بيانات معلقة
+                await _userManager.DeleteAsync(user);
+                return new AuthResponseDto { Message = "Failed to create client profile: " + ex.Message };
+            }
+
+            // 5. توليد OTP (6 أرقام عشوائية)
+            var otp = new Random().Next(100000, 999999).ToString();
+
+            // 6. حفظ الـ OTP في الداتابيز
+            user.OTPCode = otp;
+            user.OTPExpiryTime = DateTime.UtcNow.AddMinutes(30); // صلاحية 30 دقيقة
+            await _userManager.UpdateAsync(user);
+
+            // 7. إرسال الإيميل
+            var emailBody = $@"
+            <h3>Welcome to CareBox!</h3>
+            <p>Thanks for registering. Please use the code below to verify your account:</p>
+            <h2 style='color:blue;'>{otp}</h2>
+            <p>This code is valid for 10 minutes.</p>";
+
+            await _emailService.SendEmailAsync(user.Email, "CareBox Verification Code", emailBody);
+
+            return new AuthResponseDto
+            {
+                IsAuthenticated = false, // لسه مش Authenticated لحد ما يعمل Verify
+                Message = "User registered successfully. Please check your email for the OTP.",
+                Email = user.Email
+            };
         }
         #endregion
 
         #region RegisterProvider
-
         public async Task<AuthResponseDto> RegisterProviderAsync(RegisterProviderDto model)
         {
-            // 1. التأكد إن الإيميل مش موجود
-            if (await _userManager.FindByEmailAsync(model.Email) != null)
-                return new AuthResponseDto { Message = "Email is already registered!" };
+            // 1. البحث عن المستخدم أولاً للتحقق من حالته
+            var existingUser = await _userManager.FindByEmailAsync(model.Email);
 
-                // 2. إنشاء حساب Identity User
-                var user = new AppUser
+            if (existingUser != null)
+            {
+                // الحالة أ: المستخدم موجود ومفعل حسابه بالفعل -> نرفض التسجيل
+                if (existingUser.EmailConfirmed)
                 {
-                    Email = model.Email,
-                    UserName = model.Email,
-                    PhoneNumber = model.PhoneNumber,
-                    SecurityStamp = Guid.NewGuid().ToString()
-                };
-
-                var result = await _userManager.CreateAsync(user, model.Password);
-
-                if (!result.Succeeded)
-                {
-                    var errors = new List<string>();
-                    foreach (var error in result.Errors) errors.Add(error.Description);
-                    return new AuthResponseDto { Message = "Registration Failed", Errors = errors };
+                    return new AuthResponseDto { Message = "Email is already registered!" };
                 }
-
-                // 3. إضافة الدور (Role)
-                await _userManager.AddToRoleAsync(user, "ServiceProvider"); // تأكد إن الرول ده موجود في الـ DB
-
-                // 4. تجهيز الـ Location Point (Geometry)
-                // SRID 4326 هو المعيار العالمي للـ GPS (WGS 84)
-                var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
-                var locationPoint = geometryFactory.CreatePoint(new Coordinate(model.Longitude, model.Latitude));
-
-                string? logoUrl = null;
-                if (model.LogoImage != null)
+                // الحالة ب: المستخدم موجود بس لسه مفعلش (بسبب كراش أو خرج من التطبيق) -> نعيد إرسال الـ OTP
+                else
                 {
-                    // بنحفظ الصورة في فولدر اسمه "providers"
-                    logoUrl = await _fileService.SaveFileAsync(model.LogoImage, "providers");
+                    // توليد OTP جديد
+                    var newOtp = new Random().Next(100000, 999999).ToString();
+
+                    // تحديث البيانات في الداتابيز
+                    existingUser.OTPCode = newOtp;
+                    existingUser.OTPExpiryTime = DateTime.UtcNow.AddMinutes(10); // 10 دقائق للبروفايدر
+                    await _userManager.UpdateAsync(existingUser);
+
+                    // إرسال الإيميل مرة أخرى
+                    var resendBody = $@"
+            <h3>Welcome Back to CareBox Partner Program!</h3>
+            <p>It seems you didn't verify your account. Here is a new code:</p>
+            <h2 style='color:green;'>{newOtp}</h2>";
+
+                    await _emailService.SendEmailAsync(existingUser.Email, "Verify Your Provider Account (Resend)", resendBody);
+
+                    // نرجع رد نجاح عشان الموبايل يوجه اليوزر لصفحة الـ OTP
+                    return new AuthResponseDto
+                    {
+                        IsAuthenticated = false,
+                        Message = "Provider registered successfully. Please verify your email.",
+                        Email = existingUser.Email
+                    };
                 }
+            }
+
+            // --- من هنا بيبدأ كود التسجيل الجديد (لو المستخدم مش موجود خالص) ---
+
+            // 2. إنشاء حساب Identity User
+            var user = new AppUser
+            {
+                Email = model.Email,
+                UserName = model.Email,
+                PhoneNumber = model.PhoneNumber,
+                SecurityStamp = Guid.NewGuid().ToString()
+            };
+
+            var result = await _userManager.CreateAsync(user, model.Password);
+
+            if (!result.Succeeded)
+            {
+                var errors = new List<string>();
+                foreach (var error in result.Errors) errors.Add(error.Description);
+                return new AuthResponseDto { Message = "Registration Failed", Errors = errors };
+            }
+
+            // 3. إضافة الدور (Role)
+            await _userManager.AddToRoleAsync(user, "ServiceProvider");
+
+            // 4. تجهيز الـ Location Point (Geometry)
+            // SRID 4326 هو المعيار العالمي للـ GPS (WGS 84)
+            var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+            var locationPoint = geometryFactory.CreatePoint(new Coordinate(model.Longitude, model.Latitude));
+
+            string? logoUrl = null;
+            if (model.LogoImage != null)
+            {
+                // بنحفظ الصورة في فولدر اسمه "providers"
+                logoUrl = await _fileService.SaveFileAsync(model.LogoImage, "providers");
+            }
 
             // 5. إنشاء بروفايل مقدم الخدمة
-            var provider = new ServiceProvider
-                {
-                    AppUserId = user.Id, // الربط 1:1
-                    Name = model.Name,
-                    Address = model.Address,
-                    ProviderTypeId = model.ProviderTypeId,
-                    WorkingHours = model.WorkingHours,
-                    Location = locationPoint,
-                    LogoImageUrl = logoUrl,
-                    CreatedAt = DateTime.UtcNow
-                    // LogoImageUrl هيفضل null لحد ما نعمل Upload API
-                };
+            var provider = new DAL.Models.ServiceProvider // استخدمنا الاسم الكامل عشان نتفادى التداخل مع System.ServiceProvider
+            {
+                AppUserId = user.Id, // الربط 1:1
+                Name = model.Name,
+                Address = model.Address,
+                ProviderTypeId = model.ProviderTypeId,
+                WorkingHours = model.WorkingHours,
+                Location = locationPoint,
+                LogoImageUrl = logoUrl,
+                CreatedAt = DateTime.UtcNow
+            };
 
-                try
-                {
-                    await _unitOfWork.ServiceProviders.AddAsync(provider);
-                    await _unitOfWork.SaveAsync();
-                }
-                catch (Exception ex)
-                {
-                    // لو فشل حفظ البروفايل، لازم نمسح اليوزر عشان ميبقاش عندنا بيانات "يتيمة"
-                    await _userManager.DeleteAsync(user);
-                    return new AuthResponseDto { Message = "Failed to create provider profile: " + ex.Message };
-                }
+            try
+            {
+                await _unitOfWork.ServiceProviders.AddAsync(provider);
+                await _unitOfWork.SaveAsync();
+            }
+            catch (Exception ex)
+            {
+                // لو فشل حفظ البروفايل، لازم نمسح اليوزر عشان ميبقاش عندنا بيانات "يتيمة"
+                await _userManager.DeleteAsync(user);
+                return new AuthResponseDto { Message = "Failed to create provider profile: " + ex.Message };
+            }
 
-                // 6. توليد OTP وإرسال الإيميل (نفس منطق الـ Client)
-                var otp = new Random().Next(100000, 999999).ToString();
-                user.OTPCode = otp;
-                user.OTPExpiryTime = DateTime.UtcNow.AddMinutes(10);
-                await _userManager.UpdateAsync(user);
+            // 6. توليد OTP وإرسال الإيميل
+            var otp = new Random().Next(100000, 999999).ToString();
+            user.OTPCode = otp;
+            user.OTPExpiryTime = DateTime.UtcNow.AddMinutes(10);
+            await _userManager.UpdateAsync(user);
 
-                var emailBody = $@"
-            <h3>Welcome to CareBox Partner Program!</h3>
-            <p>Your business account has been created. Use code below to verify:</p>
-            <h2 style='color:green;'>{otp}</h2>";
+            var emailBody = $@"
+        <h3>Welcome to CareBox Partner Program!</h3>
+        <p>Your business account has been created. Use code below to verify:</p>
+        <h2 style='color:green;'>{otp}</h2>";
 
-                await _emailService.SendEmailAsync(user.Email, "Verify Your Provider Account", emailBody);
+            await _emailService.SendEmailAsync(user.Email, "Verify Your Provider Account", emailBody);
 
-                return new AuthResponseDto
-                {
-                    IsAuthenticated = false,
-                    Message = "Provider registered successfully. Please verify your email.",
-                    Email = user.Email
-                };
+            return new AuthResponseDto
+            {
+                IsAuthenticated = false,
+                Message = "Provider registered successfully. Please verify your email.",
+                Email = user.Email
+            };
         }
         #endregion
 

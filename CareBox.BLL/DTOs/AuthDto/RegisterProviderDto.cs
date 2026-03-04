@@ -39,8 +39,6 @@ namespace CareBox.BLL.DTOs.AuthDto
 
         // Working Hours as text in "HH:mm - HH:mm" format
         [Required]
-        [RegularExpression(@"^([0-1]\d|2[0-3]):([0-5]\d) - ([0-1]\d|2[0-3]):([0-5]\d)$",
-            ErrorMessage = "WorkingHours must be in the format HH:mm - HH:mm")]
         public string WorkingHours { get; set; }
 
         // Geolocation (Front-end sends numbers)
