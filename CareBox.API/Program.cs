@@ -11,6 +11,8 @@ using CareBox.BLL.Services.EmailServices.Interfaces;
 using CareBox.BLL.Services.EmailServices.Settings;
 using CareBox.BLL.Services.FileServices;
 using CareBox.BLL.Services.FileServices.Interfaces;
+using CareBox.BLL.Services.ProviderServices;
+using CareBox.BLL.Services.ProviderServices.Interfaces;
 using CareBox.DAL.Contexts;
 using CareBox.DAL.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -56,6 +58,7 @@ namespace CareBox.API
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IFileService, FileService>();
             builder.Services.AddScoped<IClientService, ClientService>();
+            builder.Services.AddScoped<IProviderService, ProviderServices>();
 
 
             #endregion
