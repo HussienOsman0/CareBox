@@ -3,6 +3,7 @@ using CareBox.BLL.DTOs.ClientDto.Profile;
 using CareBox.BLL.Repositories.Interfaces;
 using CareBox.BLL.Services.ClientServices.Interfaces;
 using CareBox.BLL.Services.FileServices.Interfaces;
+using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -102,44 +103,50 @@ namespace CareBox.BLL.Services.ClientServices
 
         #region List ALL provider By Type Id
 
-        public async Task<IEnumerable<ProviderCardDto>> GetProvidersByTypeAsync(byte typeId)
+        public async Task<IEnumerable<ProviderCardDto>> GetProvidersByTypeAsync(int providerTypeId, double userLat, double userLong)
         {
-            // === Future Scalability Switch ===
-            // حالياً: false (لأداء أسرع، استعلام بسيط بدون Joins)
-            // مستقبلاً: اجعلها true لتفعيل جلب الخدمات والتقييمات
-            bool includeDetails = false;
+            // 1. تحديد موقع العميل الحالي
+            var userLocation = new Point(userLong, userLat) { SRID = 4326 };
 
-            // تحديد الـ Includes بناءً على المتغير
-            string[] includes = includeDetails ? new[] { "Services", "Reviews" } : null;
-
-            // 1. الاستعلام من قاعدة البيانات
+            // 2. جلب مقدمي الخدمة حسب النوع (مع تحميل الخدمات والتقييمات)
             var providers = await _unitOfWork.ServiceProviders.FindAllAsync(
-                criteria: p => p.ProviderTypeId == typeId,
-                includes: includes
+                p => p.ProviderTypeId == providerTypeId,
+                new[] { "Services", "Reviews" }
             );
 
-            // 2. التحويل (Mapping)
-            var result = providers.Select(p => new ProviderCardDto
+            var resultList = new List<ProviderCardDto>();
+
+            foreach (var provider in providers)
             {
-                ServiceProviderId = p.ServiceProviderId,
-                Name = p.Name,
-                Address = p.Address,
-                LogoImageUrl = p.LogoImageUrl,
-                WorkingHours = p.WorkingHours,
+                // 3. حساب المسافة
+                // ملاحظة: Distance بترجع فرق الدرجات، بنضرب في 111.32 عشان نحولها تقريباً لكيلومتر
+                double distanceDegrees = provider.Location.Distance(userLocation);
+                double distanceKm = distanceDegrees * 111.32;
 
-                // منطق ذكي للتعامل مع البيانات المستقبلية
-                // إذا كان includeDetails = true والبيانات موجودة، سيتم حسابها
-                // إذا كان false، ستعود null فوراً بدون أي overhead
-                Rating = (includeDetails && p.Reviews != null && p.Reviews.Any())
-                         ? (byte)Math.Round(p.Reviews.Average(r => r.Rating))
-                         : null,
+                // 4. حساب التقييم
+                double avgRating = provider.Reviews.Any()
+                    ? provider.Reviews.Average(r => r.Rating)
+                    : 0.0;
 
-                Services = (includeDetails && p.Services != null && p.Services.Any())
-                           ? p.Services.Select(s => s.ServiceName).Take(3).ToList() // نكتفي بأول 3 خدمات للعرض
-                           : null
-            }).ToList();
+                resultList.Add(new ProviderCardDto
+                {
+                    ServiceProviderId = provider.ServiceProviderId,
+                    Name = provider.Name,
+                    Address = provider.Address ?? "No Address",
+                    LogoImageUrl = provider.LogoImageUrl?? "LogoImage",
+                    Rating = Math.Round(avgRating, 1), // تقريب لرقم عشري واحد
+                    
+                    DistanceInKm = Math.Round(distanceKm, 2),
 
-            return result;
+                    // نأخذ أول 3 خدمات فقط للعرض في الكارت
+                    Services = provider.Services.Any()
+                       ? provider.Services.Select(s => s.ServiceName).Take(3).ToList()
+                       : new List<string> { "No services available" }
+                });
+            }
+
+            // 5. ترتيب النتائج حسب الأقرب
+            return resultList.OrderBy(x => x.DistanceInKm);
         }
 
         #endregion

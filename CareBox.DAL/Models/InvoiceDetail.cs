@@ -15,5 +15,6 @@ namespace CareBox.DAL.Models
 
         public string ItemDescription { get; set; } 
         public decimal Price { get; set; }
+
     }
 }

@@ -56,49 +56,20 @@ namespace CareBox.API.Controllers
 
         #region List ALL provider
 
-        [HttpGet("providers/carcare")]
-        public async Task<IActionResult> GetProvidersTypeCarCare()
+        [HttpGet("providers/{typeId}")]
+        public async Task<IActionResult> GetProvidersByType(int typeId, [FromQuery] double lat, [FromQuery] double lon)
         {
-            // Car Care Type Id = 4 
-            byte typeId = 4;
-
-            var providers = await _clientService.GetProvidersByTypeAsync(typeId);
-
-            // نرجع 200 OK دائماً حتى لو القائمة فارغة (Empty List)
-            return Ok(providers);
-        }
-        [HttpGet("providers/Maintenance")]
-        public async Task<IActionResult> GetProvidersTypeMaintenance()
-        {
-            // Maintenance Type Id = 1
-            byte typeId = 1;
-
-            var providers = await _clientService.GetProvidersByTypeAsync(typeId);
-
-            // نرجع 200 OK دائماً حتى لو القائمة فارغة (Empty List)
-            return Ok(providers);
-        }
-        [HttpGet("providers/SpareParts")]
-        public async Task<IActionResult> GetProvidersTypeSpareParts()
-        {
-            // Spare Parts Type Id = 2
-            byte typeId = 2;
-
-            var providers = await _clientService.GetProvidersByTypeAsync(typeId);
-
-            // نرجع 200 OK دائماً حتى لو القائمة فارغة (Empty List)
-            return Ok(providers);
-        }
-        [HttpGet("providers/Emergency")]
-        public async Task<IActionResult> GetProvidersTypeEmergency()
-        {
-            // Emergency Type Id = 3 
-            byte typeId =3;
-
-            var providers = await _clientService.GetProvidersByTypeAsync(typeId);
-
-            // نرجع 200 OK دائماً حتى لو القائمة فارغة (Empty List)
-            return Ok(providers);
+            // مثال: api/client/providers/4?lat=30.05&lon=31.25
+            // رقم 4 هو الـ ID الخاص بـ Car Care حسب الـ Seeding
+            try
+            {
+                var providers = await _clientService.GetProvidersByTypeAsync(typeId, lat, lon);
+                return Ok(providers);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
         #endregion
 

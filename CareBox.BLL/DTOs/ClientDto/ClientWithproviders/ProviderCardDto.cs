@@ -8,15 +8,22 @@ namespace CareBox.BLL.DTOs.ClientDto.ClientWithproviders
 {
     public class ProviderCardDto
     {
-        public int ServiceProviderId { get; set; }
-        public string Name { get; set; }
-        public string Address { get; set; }
-        public string? LogoImageUrl { get; set; }
-        public string WorkingHours { get; set; }
+       
+            public int ServiceProviderId { get; set; } // عشان نستخدمه لما نضغط على الكارت
+            public string Name { get; set; } // اسم المكان
+            public string Address { get; set; } // العنوان
+            public string LogoImageUrl { get; set; } // صورة اللوجو
 
-        // --- Future Placeholders (For Scalability) ---
-        // حالياً سنرسلها null، ومستقبلاً عند تفعيلها لن يتكسر الـ Frontend
-        public byte? Rating { get; set; }
-        public List<string>? Services { get; set; }
+            // التقييم
+            public double Rating { get; set; }
+            
+
+            // المسافة
+            public double DistanceInKm { get; set; }
+            
+
+            // الخدمات (مثلا: غسيل، تلميع..)
+            public List<string> Services { get; set; } = new List<string>();
+        
     }
 }

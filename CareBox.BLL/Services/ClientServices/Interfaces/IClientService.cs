@@ -16,6 +16,6 @@ namespace CareBox.BLL.Services.ClientServices.Interfaces
 
         Task<ClientProfileDto> UpdateUserProfileAsync(string userId, UpdateClientProfileDto model);
 
-        Task<IEnumerable<ProviderCardDto>> GetProvidersByTypeAsync(byte typeId);
+        Task<IEnumerable<ProviderCardDto>> GetProvidersByTypeAsync(int providerTypeId, double userLat, double userLong);
     }
 }
