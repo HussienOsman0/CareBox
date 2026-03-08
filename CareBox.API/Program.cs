@@ -59,7 +59,7 @@ namespace CareBox.API
             builder.Services.AddScoped<IFileService, FileService>();
             builder.Services.AddScoped<IClientService, ClientService>();
             builder.Services.AddScoped<IProviderService, ProviderServices>();
-
+            builder.Services.AddScoped<IServiceManagementService, ServiceManagementService>();
 
             #endregion
 
