@@ -31,7 +31,7 @@ namespace CareBox.API.Controllers
         }
         #endregion
 
-        [HttpGet]
+        [HttpGet("my-list")]
         public async Task<IActionResult> GetMyServices()
         {
             try
@@ -51,7 +51,7 @@ namespace CareBox.API.Controllers
         }
 
 
-        [HttpGet("{id}")]
+        [HttpGet("details/{id}")]
         public async Task<IActionResult> GetServiceById(int id)
         {
             try
@@ -69,7 +69,7 @@ namespace CareBox.API.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpPost("create")]
         public async Task<IActionResult> AddService([FromBody] CreateServiceDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -85,7 +85,7 @@ namespace CareBox.API.Controllers
             }
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("update/{id}")]
         public async Task<IActionResult> UpdateService(int id, [FromBody] UpdateServiceDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -101,7 +101,7 @@ namespace CareBox.API.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("remove/{id}")]
         public async Task<IActionResult> DeleteService(int id)
         {
             try
