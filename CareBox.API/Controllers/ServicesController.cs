@@ -30,14 +30,15 @@ namespace CareBox.API.Controllers
             return int.Parse(userIdCliam.Value);
         }
         #endregion
-
-        [HttpGet("my-list")]
-        public async Task<IActionResult> GetMyServices()
+        #region Get Provider Services for client Process
+        [HttpGet("ProviderServices/{id}")]
+        public async Task<IActionResult> GetProviderServices(int id)
         {
             try
             {
-                int userId = GetCurrentUserId();
-                var services = await _serviceManagement.GetMyServicesAsync(userId);
+                
+                var services = await _serviceManagement.GetProviderServicesAsync(id);
+
                 return Ok(new
                 {
                     success = true,
@@ -49,8 +50,35 @@ namespace CareBox.API.Controllers
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
+        #endregion
 
 
+
+
+
+        #region List My Services
+        [HttpGet("my-list")]
+        public async Task<IActionResult> GetMyServices()
+        {
+            try
+            {
+                int userId = GetCurrentUserId();
+                var services = await _serviceManagement.GetMyServicesAsync(userId);
+
+                return Ok(new
+                {
+                    success = true,
+                    data = services
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+        #endregion
+
+        #region Services details
         [HttpGet("details/{id}")]
         public async Task<IActionResult> GetServiceById(int id)
         {
@@ -68,7 +96,9 @@ namespace CareBox.API.Controllers
                 return NotFound(new { success = false, message = ex.Message });
             }
         }
+        #endregion
 
+        #region Add Services
         [HttpPost("create")]
         public async Task<IActionResult> AddService([FromBody] CreateServiceDto dto)
         {
@@ -84,7 +114,9 @@ namespace CareBox.API.Controllers
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
+        #endregion
 
+        #region update Services
         [HttpPut("update/{id}")]
         public async Task<IActionResult> UpdateService(int id, [FromBody] UpdateServiceDto dto)
         {
@@ -100,7 +132,9 @@ namespace CareBox.API.Controllers
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
+        #endregion
 
+        #region remove Services
         [HttpDelete("remove/{id}")]
         public async Task<IActionResult> DeleteService(int id)
         {
@@ -119,7 +153,8 @@ namespace CareBox.API.Controllers
             {
                 return BadRequest(new { success = false, message = ex.Message });
             }
-        }
+        } 
+        #endregion
 
 
 

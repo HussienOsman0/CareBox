@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace CareBox.BLL.Services.ProviderServices
 {
+
     public class ServiceManagementService: IServiceManagementService
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -27,6 +28,29 @@ namespace CareBox.BLL.Services.ProviderServices
                 throw new Exception("Provider not found");
             return provider;
         }
+        #endregion
+
+
+        #region Get Provider Services for client Process
+
+
+        public async Task<IEnumerable<ServiceDto>> GetProviderServicesAsync(int userId)
+        {
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.ServiceProviderId == userId);
+            if (provider == null)
+                throw new Exception("Provider not found");
+            var services = await _unitOfWork.Services.FindAllAsync(s => s.ServiceProviderId == provider.ServiceProviderId);
+            if (services == null || !services.Any())
+                throw new Exception("No services found for this provider");
+
+            return services.Select(s => new ServiceDto
+            {
+                ServiceId = s.ServiceId,
+                ServiceName = s.ServiceName,
+                Description = s.Description,
+                Price = s.Price
+            });
+        } 
         #endregion
 
 

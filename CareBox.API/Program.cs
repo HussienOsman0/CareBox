@@ -60,6 +60,7 @@ namespace CareBox.API
             builder.Services.AddScoped<IClientService, ClientService>();
             builder.Services.AddScoped<IProviderService, ProviderServices>();
             builder.Services.AddScoped<IServiceManagementService, ServiceManagementService>();
+            builder.Services.AddScoped<IVehicleService, VehicleService>();
 
             #endregion
 
