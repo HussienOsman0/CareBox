@@ -16,5 +16,8 @@ namespace CareBox.DAL.Models
         public string ServiceName { get; set; } 
         public string? Description { get; set; } 
         public decimal Price { get; set; }
+
+        // العلاقة مع BookingService (علاقة متعددة إلى متعددة) new
+        public virtual ICollection<BookingService> BookingServices { get; set; } = new List<BookingService>();
     }
 }

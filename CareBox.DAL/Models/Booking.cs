@@ -24,6 +24,9 @@ namespace CareBox.DAL.Models
         public BookingStatus Status { get; set; } 
         public string BookingCode { get; set; }
 
+        // العلاقة مع BookingService (علاقة متعددة إلى متعددة) new
+        public virtual ICollection<BookingService> BookingServices { get; set; } = new List<BookingService>();
+
         public virtual Invoice? Invoice { get; set; }
     }
 }

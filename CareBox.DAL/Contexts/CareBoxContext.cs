@@ -39,6 +39,8 @@ namespace CareBox.DAL.Contexts
 
         #region Bookings & Orders Module
         public DbSet<Booking> Bookings { get; set; }
+        
+        public  DbSet<BookingService> BookingServices { get; set; }//new 
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceDetail> InvoiceDetails { get; set; }
         public DbSet<Order> Orders { get; set; }
