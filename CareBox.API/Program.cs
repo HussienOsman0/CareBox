@@ -4,6 +4,8 @@ using CareBox.BLL.Repositories.Interfaces;
 using CareBox.BLL.Services.AuthServices;
 using CareBox.BLL.Services.AuthServices.Interfaces;
 using CareBox.BLL.Services.AuthServices.Settings;
+using CareBox.BLL.Services.BookingManagementService;
+using CareBox.BLL.Services.BookingManagementService.Interfaces;
 using CareBox.BLL.Services.ClientServices;
 using CareBox.BLL.Services.ClientServices.Interfaces;
 using CareBox.BLL.Services.EmailServices;
@@ -61,6 +63,7 @@ namespace CareBox.API
             builder.Services.AddScoped<IProviderService, ProviderServices>();
             builder.Services.AddScoped<IServiceManagementService, ServiceManagementService>();
             builder.Services.AddScoped<IVehicleService, VehicleService>();
+            builder.Services.AddScoped<IBookingManagementService, BookingManagementService>();
 
             #endregion
 

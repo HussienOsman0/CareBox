@@ -1,0 +1,91 @@
+﻿using CareBox.BLL.DTOs.BookingDto;
+using CareBox.BLL.Repositories.Interfaces;
+using CareBox.BLL.Services.BookingManagementService.Interfaces;
+using CareBox.DAL.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace CareBox.BLL.Services.BookingManagementService
+{
+    public class BookingManagementService: IBookingManagementService
+    {
+        private readonly IUnitOfWork _unitOfWork;
+
+        public BookingManagementService(IUnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+        }
+
+        #region Helper
+        private async Task<Client> GetClientByUserId(int userId)
+        {
+            var client = await _unitOfWork.Clients.FindAsync(c => c.AppUserId == userId);
+            if (client == null)
+                throw new Exception("Client not found.");
+            return client;
+        }
+        #endregion
+        #region Create Booking
+        public async Task<BookingResponseDto> CreateBookingAsync(int userId, CreateBookingDto model)
+        {
+            var client = await GetClientByUserId(userId);
+
+            var vehicle = await _unitOfWork.Vehicles.FindAsync(v => v.VehicleId == model.VehicleId && v.ClientId == v.ClientId);
+            if (vehicle == null)
+                throw new Exception("Vehicle not found or does not belong to the client.");
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.ServiceProviderId == model.ServiceProviderId);
+            if (provider == null)
+                throw new Exception("Service provider not found.");
+            var booking = new Booking
+            {
+                ClientId = client.ClientID,
+                VehicleId = vehicle.VehicleId,
+                ServiceProviderId = provider.ServiceProviderId,
+                AppointmentDateTime = model.AppointmentDateTime,
+                Status = DAL.Enums.BookingStatus.Pending,
+                BookingCode = $"BKG-{DateTime.Now:yyyyMMdd}-{new Random().Next(1000, 9999)}",
+                BookingServices = new List<BookingService>()
+            };
+
+            decimal totalPrice = 0;
+            var ServicesNames = new List<string>();
+
+            foreach (var serviceId in model.ServiceIds.Distinct())
+            {
+                var service = await _unitOfWork.Services.FindAsync(s => s.ServiceId == serviceId && s.ServiceProviderId == model.ServiceProviderId);
+                if (service == null)
+                    throw new Exception($"Service with ID {serviceId} is invalid or does not belong to the selected provider.");
+                booking.BookingServices.Add(new BookingService
+                {
+                    ServiceId = serviceId,
+                    Booking = booking,
+                    Price = service.Price
+                });
+                totalPrice += service.Price;
+                ServicesNames.Add(service.ServiceName);
+
+            }
+            booking.TotalPrice = totalPrice;
+
+            await _unitOfWork.Bookings.AddAsync(booking);
+            await _unitOfWork.SaveAsync();
+            return new BookingResponseDto
+            {
+                BookingId = booking.BookingId,
+                BookingCode = booking.BookingCode,
+                ProviderName = provider.Name,
+                VehicleDetails = $"{vehicle.Make} {vehicle.Model} ({vehicle.PlateNumber})",
+                AppointmentDateTime = booking.AppointmentDateTime,
+                Status = booking.Status.ToString(),
+                TotalPrice = totalPrice,
+                ServicesIncluded = ServicesNames
+            };
+        } 
+        #endregion
+
+
+    }
+}

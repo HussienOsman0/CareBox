@@ -15,6 +15,6 @@ namespace CareBox.DAL.Models
         public virtual Service Service { get; set; }
 
         // السعر الفعلي وقت الحجز (مهم جداً للفواتير)
-        public decimal TotalPrice { get; set; }
+        public decimal Price { get; set; }
     }
 }

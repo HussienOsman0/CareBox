@@ -27,6 +27,8 @@ namespace CareBox.DAL.Models
         // العلاقة مع BookingService (علاقة متعددة إلى متعددة) new
         public virtual ICollection<BookingService> BookingServices { get; set; } = new List<BookingService>();
 
+        public decimal TotalPrice { get; set; }
+
         public virtual Invoice? Invoice { get; set; }
     }
 }
