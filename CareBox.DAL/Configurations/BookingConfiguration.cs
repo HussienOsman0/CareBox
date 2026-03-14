@@ -33,6 +33,9 @@ namespace CareBox.DAL.Configurations
                    .IsRequired();
             builder.HasIndex(b => b.BookingCode).IsUnique();
 
+            //new
+            builder.Property(b => b.TotalPrice).HasColumnType("decimal(18,2)");
+
             // Relationship Client
             builder.HasOne(b => b.Client)
                    .WithMany(c => c.Bookings)

@@ -16,6 +16,9 @@ namespace CareBox.DAL.Configurations
             // تحديد المفتاح الأساسي المركب (Composite Key)
             builder.HasKey(bs => new { bs.BookingId, bs.ServiceId });
 
+            //new
+            builder.Property(bs => bs.Price).HasColumnType("decimal(18,2)");
+
             // علاقة الحجز بالجدول الوسيط
             builder.HasOne(bs => bs.Booking)
                    .WithMany(b => b.BookingServices)

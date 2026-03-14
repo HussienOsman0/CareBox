@@ -1,6 +1,7 @@
 ﻿using CareBox.BLL.DTOs.BookingDto;
 using CareBox.BLL.Repositories.Interfaces;
 using CareBox.BLL.Services.BookingManagementService.Interfaces;
+using CareBox.DAL.Enums;
 using CareBox.DAL.Models;
 using System;
 using System.Collections.Generic;
@@ -20,6 +21,7 @@ namespace CareBox.BLL.Services.BookingManagementService
         }
 
         #region Helper
+        #region Get Client by id
         private async Task<Client> GetClientByUserId(int userId)
         {
             var client = await _unitOfWork.Clients.FindAsync(c => c.AppUserId == userId);
@@ -28,12 +30,27 @@ namespace CareBox.BLL.Services.BookingManagementService
             return client;
         }
         #endregion
+
+
+        #region Get Service Provider by id
+        private async Task<ServiceProvider> GetProviderByUserIdAsync(int userId)
+        {
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == userId);
+            if (provider == null)
+                throw new Exception("Service provider not found.");
+            return provider;
+        }
+
+        #endregion
+
+        #endregion
+
         #region Create Booking
         public async Task<BookingResponseDto> CreateBookingAsync(int userId, CreateBookingDto model)
         {
             var client = await GetClientByUserId(userId);
-
-            var vehicle = await _unitOfWork.Vehicles.FindAsync(v => v.VehicleId == model.VehicleId && v.ClientId == v.ClientId);
+           
+            var vehicle = await _unitOfWork.Vehicles.FindAsync(v => v.VehicleId == model.VehicleId && v.ClientId == client.ClientID);
             if (vehicle == null)
                 throw new Exception("Vehicle not found or does not belong to the client.");
             var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.ServiceProviderId == model.ServiceProviderId);
@@ -83,9 +100,131 @@ namespace CareBox.BLL.Services.BookingManagementService
                 TotalPrice = totalPrice,
                 ServicesIncluded = ServicesNames
             };
-        } 
+        }
+
+
         #endregion
 
+        #region Get Provider Bookings
+        public async Task<IEnumerable<ProviderBookingResponseDto>> GetProviderBookingsAsync(int providerUserId, BookingStatus? status = null)
+        {
+            var provider = await GetProviderByUserIdAsync(providerUserId);
 
+            var query = await _unitOfWork.Bookings.FindAllAsync(b => b.ServiceProviderId == provider.ServiceProviderId,
+                new[] { "Client", "Client.AppUser", "Vehicle", "BookingServices.Service" }
+                );
+
+            if (status.HasValue)
+            { 
+                query = query.Where(b=> b.Status ==status.Value);
+            }
+
+            var sortedBookings = query.OrderByDescending(b=>b.AppointmentDateTime).ToList();
+
+            var response = sortedBookings.Select(b => new ProviderBookingResponseDto
+            {
+                BookingId = b.BookingId,
+                BookingCode = b.BookingCode,
+                ClientName = b.Client.FullName,
+                VehicleDetails = $"{b.Vehicle.Make} {b.Vehicle.Model} ({b.Vehicle.PlateNumber})",
+                AppointmentDateTime = b.AppointmentDateTime,
+                Status = b.Status.ToString(),
+                ServicesIncluded = b.BookingServices.Select(bs => bs.Service.ServiceName).ToList()
+            });
+            return response;
+
+        }
+        #endregion
+
+        #region Get Client Bookings
+        public async Task<IEnumerable<BookingResponseDto>> GetClientBookingsAsync(int userId, string? filter = null)
+        {
+            // 1. جلب بيانات العميل باستخدام الـ Helper Method الموجودة عندك مسبقاً
+            var client = await GetClientByUserId(userId);
+
+            // 2. جلب الحجوزات الخاصة بهذا العميل مع الجداول المرتبطة
+            var query = await _unitOfWork.Bookings.FindAllAsync(
+                b => b.ClientId == client.ClientID,
+                new[] { "ServiceProvider", "Vehicle", "BookingServices.Service" }
+            );
+
+            // 3. تطبيق الفلتر الذكي (Current أو Past)
+            if (!string.IsNullOrEmpty(filter))
+            {
+                if (filter.ToLower() == "current")
+                {
+                    // الحالية: المعلقة أو المقبولة
+                    query = query.Where(b => b.Status == DAL.Enums.BookingStatus.Pending ||
+                                             b.Status == DAL.Enums.BookingStatus.Approved);
+                }
+                else if (filter.ToLower() == "past")
+                {
+                    // السابقة: المكتملة أو الملغية
+                    query = query.Where(b => b.Status == DAL.Enums.BookingStatus.Completed ||
+                                             b.Status == DAL.Enums.BookingStatus.Cancelled);
+                }
+            }
+
+            // 4. الترتيب: الأحدث أولاً (حسب وقت الحجز)
+            var sortedBookings = query.OrderByDescending(b => b.AppointmentDateTime).ToList();
+
+            // 5. تحويل البيانات إلى DTO لإرجاعها للعميل
+            var response = sortedBookings.Select(b => new BookingResponseDto
+            {
+                BookingId = b.BookingId,
+                BookingCode = b.BookingCode,
+                ProviderName = b.ServiceProvider.Name, // افترضت أن الاسم في الـ ServiceProvider هو Name بناءً على كود الـ Create
+                VehicleDetails = $"{b.Vehicle.Make} {b.Vehicle.Model} ({b.Vehicle.PlateNumber})",
+                AppointmentDateTime = b.AppointmentDateTime,
+                Status = b.Status.ToString(),
+                TotalPrice = b.TotalPrice,
+                ServicesIncluded = b.BookingServices.Select(bs => bs.Service.ServiceName).ToList()
+            });
+
+            return response;
+        }
+        #endregion
+
+        #region Update Booking Status
+        public async Task<bool> UpdateBookingStatusAsync(int userId, UpdateBookingStatusDto model)
+        {
+            // 1. البحث عن الحجز
+            var booking = await _unitOfWork.Bookings.FindAsync(b => b.BookingId == model.BookingId);
+            if (booking == null)
+                throw new Exception("Booking not found.");
+
+            // 2. التحقق من صلاحيات المستخدم (هل هو العميل صاحب الحجز أم مقدم الخدمة؟)
+            var client = await _unitOfWork.Clients.FindAsync(c => c.ClientID == booking.ClientId);
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.ServiceProviderId == booking.ServiceProviderId);
+
+            bool isClient = client?.AppUserId == userId;
+            bool isProvider = provider?.AppUserId == userId;
+
+            if (!isClient && !isProvider)
+                throw new UnauthorizedAccessException("You are not authorized to update this booking.");
+
+            // 3. تطبيق قواعد العمل (Business Rules)
+
+            // أ- لا يمكن تعديل حجز تم إلغاؤه أو إكماله مسبقاً
+            if (booking.Status == DAL.Enums.BookingStatus.Completed || booking.Status == DAL.Enums.BookingStatus.Cancelled)
+                throw new Exception($"Cannot change status of a {booking.Status} booking.");
+
+            // ب- إذا كان المستخدم هو "العميل"، يحق له الإلغاء فقط
+            if (isClient && model.Status != DAL.Enums.BookingStatus.Cancelled)
+                throw new Exception("Clients are only allowed to cancel bookings.");
+
+            // ج- إذا كان "مقدم الخدمة"، لا يمكنه إكمال حجز وهو لا يزال معلقاً (يجب أن يقبله أولاً)
+            if (isProvider && booking.Status == DAL.Enums.BookingStatus.Pending && model.Status == DAL.Enums.BookingStatus.Completed)
+                throw new Exception("Cannot complete a pending booking. It must be approved first.");
+
+            // 4. تحديث الحالة وحفظ التعديلات
+            booking.Status = model.Status;
+
+            // _unitOfWork.Bookings.Update(booking); // قم بإلغاء التعليق إذا كانت دالة Update مطلوبة في الـ Repository الخاص بك
+            await _unitOfWork.SaveAsync();
+
+            return true;
+        }
+        #endregion
     }
 }
