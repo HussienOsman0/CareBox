@@ -18,6 +18,8 @@ namespace CareBox.BLL.Services.BookingManagementService.Interfaces
 
         Task<IEnumerable<BookingResponseDto>> GetClientBookingsAsync(int userId, string? filter = null);
 
+        Task<IEnumerable<ProviderClientResponseDto>> GetProviderClientsAsync(int providerUserId);
+
 
 
     }

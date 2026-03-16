@@ -153,5 +153,37 @@ namespace CareBox.API.Controllers
         #endregion
 
 
+
+
+        #region Get Provider Clients
+        [HttpGet("MyClients")]
+        [Authorize(Roles = "SERVICEPROVIDER")]
+        public async Task<IActionResult> GetProviderClients()
+        {
+            try
+            {
+                // استخراج الـ ID الخاص بمقدم الخدمة من التوكن
+                var userId = GetCurrentUserId();
+
+                // استدعاء الخدمة لجلب العملاء
+                var clients = await _bookingService.GetProviderClientsAsync(userId);
+
+                return Ok(new
+                {
+                    success = true,
+                    data = clients
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
+        }
+        #endregion
+
     }
 }

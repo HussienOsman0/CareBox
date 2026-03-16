@@ -226,5 +226,35 @@ namespace CareBox.BLL.Services.BookingManagementService
             return true;
         }
         #endregion
+
+
+
+
+
+
+        #region Get Provider Clients
+        public async Task<IEnumerable<ProviderClientResponseDto>> GetProviderClientsAsync(int providerUserId)
+        {
+            var provider = await GetProviderByUserIdAsync(providerUserId);
+            var bookings = await _unitOfWork.Bookings.FindAllAsync(b => b.ServiceProviderId == provider.ServiceProviderId
+            , new[] { "Client", "Client.AppUser", "Vehicle" });
+
+            var clientsList = bookings
+            .GroupBy(b => new { b.ClientId, b.VehicleId })
+            .Select(g => g.First()) // نأخذ أول حجز من كل مجموعة
+            .Select(b => new ProviderClientResponseDto
+            {
+                ClientName = b.Client.FullName,
+                ClientPhone = b.Client.AppUser?.PhoneNumber ?? "No Phone Number",
+                CarMake = b.Vehicle.Make,
+                CarModel = b.Vehicle.Model,
+                Kilometers = b.Vehicle.Kilometers
+            });
+            
+
+            return clientsList;
+
+        }
+        #endregion
     }
 }
