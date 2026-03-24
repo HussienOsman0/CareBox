@@ -1,7 +1,9 @@
-﻿using CareBox.BLL.DTOs.ProviderDto.Profile;
+﻿using CareBox.BLL.DTOs.ProviderDto.About;
+using CareBox.BLL.DTOs.ProviderDto.Profile;
 using CareBox.BLL.Repositories.Interfaces;
 using CareBox.BLL.Services.FileServices.Interfaces;
 using CareBox.BLL.Services.ProviderServices.Interfaces;
+using CareBox.DAL.Models;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
 using System;
@@ -48,6 +50,8 @@ namespace CareBox.BLL.Services.ProviderServices
 
             return providerDto;
         }
+
+        
         #endregion
 
         #region Provider update profile
@@ -88,8 +92,148 @@ namespace CareBox.BLL.Services.ProviderServices
 
         }
 
-       
+
+
         #endregion
+
+
+
+
+
+
+
+        #region Get Provider About for client
+        public async Task<ProviderAboutDto> GetProviderAboutForClientAsync(int providerId)
+        {
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(
+             p => p.ServiceProviderId == providerId,
+             new[] { "ProviderImages" });
+
+
+
+            if (provider == null) throw new Exception("Provider profile not found.");
+
+            var imagesList = provider.ProviderImages.Select(img => new ProviderImageDto
+            {
+                Id = img.Id,
+                ImageUrl = img.ImageUrl
+            }).ToList();
+
+            // 3. 💡 لو مفيش صور خالص، هنحط عنصر افتراضي بيقول "no photo"
+            if (!imagesList.Any())
+            {
+                imagesList.Add(new ProviderImageDto
+                {
+                    Id = 0, // Id افتراضي
+                    ImageUrl = "no photo" // أو ممكن تحط مسار صورة ديفولت زي "uploads/default.png"
+                });
+            }
+
+            var result = new ProviderAboutDto
+            {
+                ServiceProviderId = provider.ServiceProviderId,
+                Description = string.IsNullOrWhiteSpace(provider.Description) ? "No Description" : provider.Description,
+                Images = imagesList
+            };
+
+            return result;
+        }
+        #endregion
+
+
+
+
+
+        #region Get Provider About
+        public async Task<ProviderAboutDto> GetProviderAboutAsync(int providerId)
+        {
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(
+             p => p.AppUserId == providerId,
+             new[] { "ProviderImages" });
+
+
+
+            if (provider == null) throw new Exception("Provider profile not found.");
+
+            var imagesList = provider.ProviderImages.Select(img => new ProviderImageDto
+            {
+                Id = img.Id,
+                ImageUrl = img.ImageUrl
+            }).ToList();
+
+            // 3. 💡 لو مفيش صور خالص، هنحط عنصر افتراضي بيقول "no photo"
+            if (!imagesList.Any())
+            {
+                imagesList.Add(new ProviderImageDto
+                {
+                    Id = 0, // Id افتراضي
+                    ImageUrl = "no photo" // أو ممكن تحط مسار صورة ديفولت زي "uploads/default.png"
+                });
+            }
+
+            var result = new ProviderAboutDto
+            {
+                ServiceProviderId = provider.ServiceProviderId,
+                Description = string.IsNullOrWhiteSpace(provider.Description) ? "No Description" : provider.Description,
+                Images = imagesList
+            };
+
+            return result;
+        }
+        #endregion
+
+        #region Update Provider About
+        public async Task<bool> UpdateProviderAboutAsync(int providerId, UpdateProviderAboutDto dto)
+        {
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(
+             p => p.AppUserId == providerId,
+             new[] { "ProviderImages" });
+
+            if (provider == null)
+                return false;
+
+            provider.Description = dto.Description;
+
+            if (dto.ImagesToDeleteIds != null && dto.ImagesToDeleteIds.Any())
+            {
+                var imagesToRemove = provider.ProviderImages
+             .Where(img => dto.ImagesToDeleteIds.Contains(img.Id))
+             .ToList();
+
+                foreach (var img in imagesToRemove)
+                {
+                    // حذف من السيرفر (الملفات)
+                    _fileService.DeleteFile(img.ImageUrl); // تأكد من اسم الدالة في IFileService
+
+                    // حذف من الداتابيز
+                    provider.ProviderImages.Remove(img);
+                }
+            }
+            if (dto.NewImages != null && dto.NewImages.Any())
+            {
+                foreach (var file in dto.NewImages)
+                {
+                    // الدالة عندك في المشروع اسمها SaveFileAsync
+                    var imageUrl = await _fileService.SaveFileAsync(file, "provider_about");
+
+                    // إضافة الصورة للـ Entity (الـ EF هيربطها أوتوماتيك بالورشة)
+                    provider.ProviderImages.Add(new ProviderImage
+                    {
+                        ImageUrl = imageUrl
+
+                    });
+                }
+
+            }
+            _unitOfWork.ServiceProviders.Update(provider);
+            await _unitOfWork.SaveAsync();
+
+            return true;
+
+
+        } 
+        #endregion
+
 
     }
 }

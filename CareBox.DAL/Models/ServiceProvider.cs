@@ -26,9 +26,12 @@ namespace CareBox.DAL.Models
 
         public string WorkingHours { get; set; } 
         public string? LogoImageUrl { get; set; }
-        public DateTime CreatedAt { get; set; }=DateTime.Now; 
+        public DateTime CreatedAt { get; set; }=DateTime.Now;
 
-        
+        // --- الحقول الجديدة لصفحة About ---
+        public string? Description { get; set; } // وصف مقدم الخدمة
+        public virtual ICollection<ProviderImage> ProviderImages { get; set; } = new List<ProviderImage>(); // صور مقدم الخدمة
+        // -----------------------------------
         public virtual ICollection<Technician> Technicians { get; set; } 
         public virtual ICollection<Service> Services { get; set; } 
         public virtual ICollection<Product> Products { get; set; } 

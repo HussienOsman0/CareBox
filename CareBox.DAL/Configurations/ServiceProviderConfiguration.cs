@@ -48,7 +48,11 @@ namespace CareBox.DAL.Configurations
             builder.Property(sp => sp.CreatedAt)
                    .HasColumnType(DBTypes.DateTime)
                    .HasDefaultValueSql("GETDATE()");
-
+            // Description
+            builder.Property(sp => sp.Description)
+                   .HasColumnType(DBTypes.NvarChar) // أو "nvarchar(max)" إذا كان الوصف طويلاً جداً
+                   .HasMaxLength(1000)
+                   .IsRequired(false); // الوصف اختياري
 
             // AppUser
             builder.HasOne(sp => sp.AppUser)
