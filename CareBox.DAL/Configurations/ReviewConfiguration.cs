@@ -25,6 +25,10 @@ namespace CareBox.DAL.Configurations
             // Comment
             builder.Property(r => r.Comment)
                    .HasColumnType(DBTypes.NvarCharMax);
+            //createdAt
+            builder.Property(r => r.CreatedAt)
+                   .IsRequired()
+                   .HasDefaultValueSql("GETDATE()");
 
             //Relationship Client
             builder.HasOne(r => r.Client)

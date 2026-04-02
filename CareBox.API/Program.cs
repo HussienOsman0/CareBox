@@ -15,6 +15,8 @@ using CareBox.BLL.Services.FileServices;
 using CareBox.BLL.Services.FileServices.Interfaces;
 using CareBox.BLL.Services.ProviderServices;
 using CareBox.BLL.Services.ProviderServices.Interfaces;
+using CareBox.BLL.Services.ReviewServices;
+using CareBox.BLL.Services.ReviewServices.Interfaces;
 using CareBox.DAL.Contexts;
 using CareBox.DAL.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -64,6 +66,7 @@ namespace CareBox.API
             builder.Services.AddScoped<IServiceManagementService, ServiceManagementService>();
             builder.Services.AddScoped<IVehicleService, VehicleService>();
             builder.Services.AddScoped<IBookingManagementService, BookingManagementService>();
+            builder.Services.AddScoped<IReviewService, ReviewService>();
 
             #endregion
 

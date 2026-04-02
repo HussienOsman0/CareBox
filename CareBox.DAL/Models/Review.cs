@@ -17,6 +17,7 @@ namespace CareBox.DAL.Models
         public virtual ServiceProvider ServiceProvider { get; set; }
 
         public byte Rating { get; set; } 
-        public string? Comment { get; set; } 
+        public string? Comment { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }
