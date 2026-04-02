@@ -132,6 +132,7 @@ namespace CareBox.BLL.Services.ProviderServices
             var result = new ProviderAboutDto
             {
                 ServiceProviderId = provider.ServiceProviderId,
+                LocationLink= $"https://www.google.com/maps?q={provider.Location.Y},{provider.Location.X}"?? "No Location",
                 Description = string.IsNullOrWhiteSpace(provider.Description) ? "No Description" : provider.Description,
                 Images = imagesList
             };
@@ -174,6 +175,7 @@ namespace CareBox.BLL.Services.ProviderServices
             var result = new ProviderAboutDto
             {
                 ServiceProviderId = provider.ServiceProviderId,
+                LocationLink = $"https://www.google.com/maps?q={provider.Location.Y},{provider.Location.X}" ?? "No Location",
                 Description = string.IsNullOrWhiteSpace(provider.Description) ? "No Description" : provider.Description,
                 Images = imagesList
             };

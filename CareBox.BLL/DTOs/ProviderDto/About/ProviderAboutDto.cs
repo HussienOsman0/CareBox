@@ -10,6 +10,7 @@ namespace CareBox.BLL.DTOs.ProviderDto.About
     {
         public int ServiceProviderId { get; set; }
         public string? Description { get; set; }
+        public string? LocationLink { get; set; }
         public List<ProviderImageDto> Images { get; set; } = new List<ProviderImageDto>();
     }
 }

@@ -138,7 +138,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("VehicleId");
 
-                    b.ToTable("Bookings");
+                    b.ToTable("Bookings", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.BookingService", b =>
@@ -156,7 +156,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("ServiceId");
 
-                    b.ToTable("BookingServices");
+                    b.ToTable("BookingServices", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.Client", b =>
@@ -191,7 +191,7 @@ namespace CareBox.DAL.Migrations
                     b.HasIndex("AppUserId")
                         .IsUnique();
 
-                    b.ToTable("Clients");
+                    b.ToTable("Clients", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.EmergencyRequest", b =>
@@ -239,7 +239,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("VehicleId");
 
-                    b.ToTable("EmergencyRequests");
+                    b.ToTable("EmergencyRequests", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.Invoice", b =>
@@ -266,7 +266,7 @@ namespace CareBox.DAL.Migrations
                     b.HasIndex("BookingId")
                         .IsUnique();
 
-                    b.ToTable("Invoices");
+                    b.ToTable("Invoices", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.InvoiceDetail", b =>
@@ -292,7 +292,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("InvoiceId");
 
-                    b.ToTable("InvoiceDetails");
+                    b.ToTable("InvoiceDetails", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.Listing", b =>
@@ -339,7 +339,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("VehicleId");
 
-                    b.ToTable("Listings");
+                    b.ToTable("Listings", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.ListingImage", b =>
@@ -361,7 +361,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("ListingId");
 
-                    b.ToTable("ListingImages");
+                    b.ToTable("ListingImages", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.Order", b =>
@@ -390,7 +390,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("ClientId");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.OrderDetail", b =>
@@ -411,7 +411,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderDetails");
+                    b.ToTable("OrderDetails", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.Product", b =>
@@ -456,7 +456,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("ServiceProviderId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.ProviderImage", b =>
@@ -478,7 +478,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("ServiceProviderId");
 
-                    b.ToTable("ProviderImage");
+                    b.ToTable("ProviderImage", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.ProviderType", b =>
@@ -493,7 +493,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasKey("ProviderTypeId");
 
-                    b.ToTable("ProviderTypes");
+                    b.ToTable("ProviderTypes", (string)null);
 
                     b.HasData(
                         new
@@ -551,7 +551,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.Review", b =>
@@ -580,7 +580,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("ServiceProviderId");
 
-                    b.ToTable("Reviews");
+                    b.ToTable("Reviews", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.SavedListing", b =>
@@ -595,7 +595,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("ListingId");
 
-                    b.ToTable("SavedListings");
+                    b.ToTable("SavedListings", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.Service", b =>
@@ -624,7 +624,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("ServiceProviderId");
 
-                    b.ToTable("Services");
+                    b.ToTable("Services", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.ServiceProvider", b =>
@@ -679,7 +679,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("ProviderTypeId");
 
-                    b.ToTable("ServiceProviders");
+                    b.ToTable("ServiceProviders", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.Technician", b =>
@@ -705,7 +705,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("ServiceProviderId");
 
-                    b.ToTable("Technicians");
+                    b.ToTable("Technicians", (string)null);
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.Vehicle", b =>
@@ -747,7 +747,7 @@ namespace CareBox.DAL.Migrations
 
                     b.HasIndex("ClientId");
 
-                    b.ToTable("Vehicles");
+                    b.ToTable("Vehicles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<int>", b =>

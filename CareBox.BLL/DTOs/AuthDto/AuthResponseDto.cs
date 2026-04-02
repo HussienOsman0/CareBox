@@ -13,6 +13,8 @@ namespace CareBox.BLL.DTOs.AuthDto
         public string Username { get; set; }
         public string Email { get; set; }
         public List<string> Roles { get; set; }
+        //for provider
+        public string? ProviderType { get; set; }
 
         //  Access Token (JWT)
         public string Token { get; set; }

@@ -265,9 +265,9 @@ namespace CareBox.BLL.Services.AuthServices
             await _userManager.UpdateAsync(user);
 
             var emailBody = $@"
-        <h3>Welcome to CareBox Partner Program!</h3>
-        <p>Your business account has been created. Use code below to verify:</p>
-        <h2 style='color:green;'>{otp}</h2>";
+            <h3>Welcome to CareBox Partner Program!</h3>
+            <p>Your business account has been created. Use code below to verify:</p>
+            <h2 style='color:green;'>{otp}</h2>";
 
             await _emailService.SendEmailAsync(user.Email, "Verify Your Provider Account", emailBody);
 
@@ -345,6 +345,29 @@ namespace CareBox.BLL.Services.AuthServices
                 };
             }
 
+            // ====================================================================
+            // --- الجديد (1): التحقق من نوع المستخدم وجلب بيانات الـ ProviderType ---
+            // ====================================================================
+            var roles = await _userManager.GetRolesAsync(user);
+            string? providerType = null; // متغير لتخزين نوع الخدمة
+
+            // لو المستخدم ده الدور بتاعه "SERVICEPROVIDER"
+            if (roles.Contains("SERVICEPROVIDER"))
+            {
+                // بنروح جدول الـ ServiceProviders نجيب البروفايل بتاعه، ونعمل Include لجدول ProviderType
+                var provider = await _unitOfWork.ServiceProviders.FindAsync(
+                    p => p.AppUserId == user.Id,
+                    includes: new[] { "ProviderType" }
+                );
+
+                // لو لقينا البروفايل والنوع مربوط صح، بناخد اسم النوع (مثلاً: Towing, Mechanic)
+                if (provider != null && provider.ProviderType != null)
+                {
+                    providerType = provider.ProviderType.TypeName;
+                }
+            }
+            // ====================================================================
+
             // 4. إنشاء الـ JWT Access Token (باستخدام الدالة المساعدة اللي عملناها)
             var jwtSecurityToken = await CreateJwtToken(user);
             var accessToken = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
@@ -364,6 +387,7 @@ namespace CareBox.BLL.Services.AuthServices
             return new AuthResponseDto
             {
                 Message = "Login Successful",
+
                 IsAuthenticated = true,
                 Token = accessToken,
                 TokenExpiration = jwtSecurityToken.ValidTo,
@@ -371,7 +395,9 @@ namespace CareBox.BLL.Services.AuthServices
                 RefreshTokenExpiration = refreshToken.ExpiryDate,
                 Email = user.Email,
                 Username = user.UserName,
-                Roles = (await _userManager.GetRolesAsync(user)).ToList()
+                Roles = roles.ToList(),
+                ProviderType = providerType
+
             };
         }
 

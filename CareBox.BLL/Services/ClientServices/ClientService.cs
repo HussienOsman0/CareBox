@@ -110,7 +110,7 @@ namespace CareBox.BLL.Services.ClientServices
 
             // 2. جلب مقدمي الخدمة حسب النوع (مع تحميل الخدمات والتقييمات)
             var providers = await _unitOfWork.ServiceProviders.FindAllAsync(
-                p => p.ProviderTypeId == providerTypeId,
+                p => p.ProviderTypeId == providerTypeId && p.Services.Any(),
                 new[] { "Services", "Reviews" }
             );
 
