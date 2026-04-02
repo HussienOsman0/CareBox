@@ -33,6 +33,18 @@ namespace CareBox.DAL.Configurations
                    .WithOne(b => b.Invoice)
                    .HasForeignKey<Invoice>(i => i.BookingId)
                    .OnDelete(DeleteBehavior.Restrict);
+
+            // Relationship with Order (One-to-One, Optional)
+            builder.HasOne(i => i.Order)
+                   .WithOne(o => o.Invoice)
+                   .HasForeignKey<Invoice>(i => i.OrderId)
+                   .OnDelete(DeleteBehavior.Restrict);
+
+            // Relationship with EmergencyRequest (One-to-One, Optional)
+            builder.HasOne(i => i.EmergencyRequest)
+                   .WithOne(er => er.Invoice)
+                   .HasForeignKey<Invoice>(i => i.EmergencyRequestId)
+                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

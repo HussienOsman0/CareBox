@@ -20,6 +20,10 @@ namespace CareBox.DAL.Models
 
         public EmergencyRequestType RequestType { get; set; } // 
 
+
+        public virtual Invoice? Invoice { get; set; }
+
+
         // GEOGRAPHY (Point)
         public Point RequestLocation { get; set; } 
 

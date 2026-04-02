@@ -16,7 +16,10 @@ namespace CareBox.DAL.Models
 
         public DateTime OrderDate { get; set; } 
         public OrderStatus Status { get; set; } 
-        public decimal TotalAmount { get; set; } 
+        public decimal TotalAmount { get; set; }
+
+
+        public virtual Invoice? Invoice { get; set; }
 
         public virtual ICollection<OrderDetail> OrderDetails { get; set; }
     }
