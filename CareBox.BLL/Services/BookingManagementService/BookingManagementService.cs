@@ -63,6 +63,7 @@ namespace CareBox.BLL.Services.BookingManagementService
                 ServiceProviderId = provider.ServiceProviderId,
                 AppointmentDateTime = model.AppointmentDateTime,
                 Status = DAL.Enums.BookingStatus.Pending,
+                ProblemDescription = model.ProblemDescription,
                 BookingCode = $"BKG-{DateTime.Now:yyyyMMdd}-{new Random().Next(1000, 9999)}",
                 BookingServices = new List<BookingService>()
             };
@@ -128,6 +129,7 @@ namespace CareBox.BLL.Services.BookingManagementService
                 ClientName = b.Client.FullName,
                 VehicleDetails = $"{b.Vehicle.Make} {b.Vehicle.Model} ({b.Vehicle.PlateNumber})",
                 AppointmentDateTime = b.AppointmentDateTime,
+                ProblemDescription = string.IsNullOrWhiteSpace(b.ProblemDescription) ? "No description provided" : b.ProblemDescription,
                 Status = b.Status.ToString(),
                 ServicesIncluded = b.BookingServices.Select(bs => bs.Service.ServiceName).ToList()
             });

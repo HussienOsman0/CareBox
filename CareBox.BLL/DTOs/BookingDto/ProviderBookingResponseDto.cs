@@ -14,6 +14,7 @@ namespace CareBox.BLL.DTOs.BookingDto
         public string VehicleDetails { get; set; }
         public DateTime AppointmentDateTime { get; set; }
         public string Status { get; set; }
+        public string? ProblemDescription { get; set; }
         public List<string> ServicesIncluded { get; set; }=new List<string>();
 
     }

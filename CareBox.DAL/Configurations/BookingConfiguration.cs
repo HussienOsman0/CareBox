@@ -36,6 +36,11 @@ namespace CareBox.DAL.Configurations
             //new
             builder.Property(b => b.TotalPrice).HasColumnType("decimal(18,2)");
 
+            // إعداد حقل وصف المشكلة
+            builder.Property(b => b.ProblemDescription)
+                   .HasMaxLength(1000) // حددنا أقصى طول بـ 1000 حرف
+                   .IsRequired(false); // لأنه اختياري (?)
+
             // Relationship Client
             builder.HasOne(b => b.Client)
                    .WithMany(c => c.Bookings)

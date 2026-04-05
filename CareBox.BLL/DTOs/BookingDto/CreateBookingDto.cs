@@ -21,5 +21,7 @@ namespace CareBox.BLL.DTOs.BookingDto
 
         [Required]
         public DateTime AppointmentDateTime { get; set; } // 4. Appointment Date & Time
+
+        public string? ProblemDescription { get; set; }
     }
 }
