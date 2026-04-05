@@ -1,0 +1,144 @@
+﻿using CareBox.BLL.DTOs.InvoiceDto;
+using CareBox.BLL.Repositories.Interfaces;
+using CareBox.BLL.Services.InvoiceManagementService.Interfaces;
+using CareBox.DAL.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace CareBox.BLL.Services.InvoiceManagementService
+{
+    public class InvoiceManagementService : IInvoiceManagementService
+    {
+        private readonly IUnitOfWork _unitOfWork;
+
+        public InvoiceManagementService(IUnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+        }
+
+        #region Helpers
+        private async Task<ServiceProvider> GetProviderByUserIdAsync(int userId)
+        {
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == userId);
+            if (provider == null)
+                throw new Exception("Provider not found");
+            return provider;
+        }
+        #endregion
+
+        #region put to Invoice
+        public async Task<bool> AddCustomItemsToInvoiceAsync(int providerUserId, AddMultipleInvoiceItemsDto model)
+        {
+            var provider = await GetProviderByUserIdAsync(providerUserId);
+
+            // 1. البحث عن الفاتورة باستخدام BookingId بدلاً من InvoiceId
+            var query = await _unitOfWork.Invoices.FindAllAsync(
+                i => i.BookingId == model.BookingId, // التغيير الجوهري هنا
+                new[] { "InvoiceDetails", "Booking", "Booking.ServiceProvider" }
+            );
+
+            var invoice = query.FirstOrDefault();
+
+            if (invoice == null)
+                throw new Exception("No invoice found for this booking.");
+
+            if (invoice.Booking?.ServiceProvider?.AppUserId != providerUserId)
+                throw new UnauthorizedAccessException("You are not authorized to edit this invoice.");
+
+            if (!invoice.IsDraft)
+                throw new Exception("Cannot add items. The invoice is final and no longer a draft.");
+
+            decimal totalAddedAmount = 0;
+
+            foreach (var item in model.Items)
+            {
+                var newDetail = new InvoiceDetail
+                {
+                    ItemDescription = item.ItemDescription,
+                    Price = item.Price
+                };
+
+                invoice.InvoiceDetails.Add(newDetail);
+                totalAddedAmount += item.Price;
+            }
+
+            // 5. تحديث السعر الإجمالي للفاتورة وللحجز أيضاً
+            invoice.TotalAmount += totalAddedAmount;
+            invoice.Booking.TotalPrice = invoice.TotalAmount; // تحديث سعر الحجز ليكون متطابقاً دائماً
+
+            // 6. حفظ التعديلات
+            await _unitOfWork.SaveAsync();
+
+            return true;
+        }
+
+        #endregion
+
+
+        #region Get Client Invoices
+        public async Task<IEnumerable<ClientInvoiceResponseDto>> GetClientInvoicesAsync(int userId)
+        {
+            // جلب كائن العميل أولاً
+            var client = await _unitOfWork.Clients.FindAsync(c => c.AppUserId == userId);
+            if (client == null) throw new Exception("Client not found.");
+
+            // جلب الفواتير مع تفاصيل الخدمة ونوع مقدم الخدمة
+            var invoices = await _unitOfWork.Invoices.FindAllAsync(
+            i => i.Booking.ClientId == client.ClientID && i.IsDraft == false,
+            new[] { "InvoiceDetails", "Booking.ServiceProvider.ProviderType" }
+            );
+
+            // المابينج اليدوي (Manual Mapping)
+            return invoices.OrderByDescending(i => i.IssueDate).Select(i => new ClientInvoiceResponseDto
+            {
+                InvoiceId = i.InvoiceId,
+                IssueDate = i.IssueDate,
+                TotalAmount = i.TotalAmount,
+                ProviderName = i.Booking?.ServiceProvider?.Name ?? "N/A",
+                ProviderType = i.Booking?.ServiceProvider?.ProviderType?.TypeName ?? "N/A",
+                Items = i.InvoiceDetails.Select(d => new InvoiceItemDto
+                {
+                    ItemDescription = d.ItemDescription,
+                    Price = d.Price
+                }).ToList()
+            });
+        }
+        #endregion
+
+        #region Get Provider Invoices
+        public async Task<IEnumerable<ProviderInvoiceResponseDto>> GetProviderInvoicesAsync(int userId)
+        {
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == userId);
+            if (provider == null) throw new Exception("Provider not found.");
+
+            // التعديل هنا: إضافة شرط IsDraft == false
+            var invoices = await _unitOfWork.Invoices.FindAllAsync(
+                i => i.Booking.ServiceProviderId == provider.ServiceProviderId && i.IsDraft == false,
+                new[] { "InvoiceDetails", "Booking.Client" }
+            );
+
+            return invoices.OrderByDescending(i => i.IssueDate).Select(i => new ProviderInvoiceResponseDto
+            {
+                InvoiceId = i.InvoiceId,
+                IssueDate = i.IssueDate,
+                TotalAmount = i.TotalAmount,
+                IsDraft = i.IsDraft, // ستكون دائماً false هنا بناءً على الفلتر
+                ClientName = i.Booking?.Client?.FullName ?? "N/A",
+                Items = i.InvoiceDetails.Select(d => new InvoiceItemDto
+                {
+                    ItemDescription = d.ItemDescription,
+                    Price = d.Price
+                }).ToList()
+            });
+        } 
+        #endregion
+
+
+
+    }
+
+
+}

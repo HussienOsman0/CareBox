@@ -190,8 +190,13 @@ namespace CareBox.BLL.Services.BookingManagementService
         #region Update Booking Status
         public async Task<bool> UpdateBookingStatusAsync(int userId, UpdateBookingStatusDto model)
         {
-            // 1. البحث عن الحجز
-            var booking = await _unitOfWork.Bookings.FindAsync(b => b.BookingId == model.BookingId);
+            // 1. البحث عن الحجز (استخدام FindAllAsync لجلب الجداول المرتبطة مثل الخدمات والفاتورة)
+            var query = await _unitOfWork.Bookings.FindAllAsync(
+                b => b.BookingId == model.BookingId,
+                new[] { "BookingServices.Service", "Invoice" }
+            );
+
+            var booking = query.FirstOrDefault();
             if (booking == null)
                 throw new Exception("Booking not found.");
 
@@ -219,10 +224,56 @@ namespace CareBox.BLL.Services.BookingManagementService
             if (isProvider && booking.Status == DAL.Enums.BookingStatus.Pending && model.Status == DAL.Enums.BookingStatus.Completed)
                 throw new Exception("Cannot complete a pending booking. It must be approved first.");
 
-            // 4. تحديث الحالة وحفظ التعديلات
+            // 4. تحديث حالة الحجز
             booking.Status = model.Status;
 
-            // _unitOfWork.Bookings.Update(booking); // قم بإلغاء التعليق إذا كانت دالة Update مطلوبة في الـ Repository الخاص بك
+            // ----------------------------------------------------
+            // 5. منطق الفواتير (Invoice Logic)
+            // ----------------------------------------------------
+
+            // أ- عند القبول (Approved): إنشاء فاتورة مسودة (Draft)
+            if (model.Status == DAL.Enums.BookingStatus.Approved && booking.Invoice == null)
+            {
+                var invoice = new Invoice
+                {
+                    BookingId = booking.BookingId,
+                    TotalAmount = booking.TotalPrice,
+                    IssueDate = DateTime.Now,
+                    IsDraft = true, // الفاتورة تبدأ كمسودة قابلة للتعديل
+                    InvoiceDetails = new List<InvoiceDetail>()
+                };
+
+                // نقل الخدمات الأساسية التي اختارها العميل إلى الفاتورة
+                foreach (var bookingService in booking.BookingServices)
+                {
+                    invoice.InvoiceDetails.Add(new InvoiceDetail
+                    {
+                        // إذا لم تكن هناك خدمة مسجلة، نضع وصفاً افتراضياً أو الوصف المكتوب
+                        ItemDescription = bookingService.Service?.ServiceName ?? "خدمة إضافية",
+                        Price = bookingService.Price
+                    });
+                }
+                await _unitOfWork.Invoices.AddAsync(invoice);
+            }
+
+            // ب- عند الاكتمال (Completed): إغلاق الفاتورة وتحويلها لنهائية
+            else if (model.Status == DAL.Enums.BookingStatus.Completed)
+            {
+                if (booking.Invoice != null)
+                {
+                    booking.Invoice.IsDraft = false; // إغلاق الفاتورة (لم تعد مسودة)
+                    booking.Invoice.IssueDate = DateTime.Now; // تحديث تاريخ الإصدار ليوم الانتهاء الفعلي
+
+                    // تحديث إجمالي الحجز ليتطابق مع إجمالي الفاتورة (في حال إضافة الميكانيكي لأي قطع أو مصنعية)
+                    booking.TotalPrice = booking.Invoice.TotalAmount;
+                }
+                else
+                {
+                    throw new Exception("Cannot complete booking without a draft invoice.");
+                }
+            }
+
+            // 6. حفظ التعديلات في قاعدة البيانات
             await _unitOfWork.SaveAsync();
 
             return true;

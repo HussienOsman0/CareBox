@@ -23,6 +23,8 @@ namespace CareBox.DAL.Models
         public decimal TotalAmount { get; set; } 
         public DateTime IssueDate { get; set; }
 
+        public bool IsDraft { get; set; } = true;
+
         public virtual ICollection<InvoiceDetail> InvoiceDetails { get; set; } 
     }
 }

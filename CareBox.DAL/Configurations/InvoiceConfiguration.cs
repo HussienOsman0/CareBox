@@ -28,6 +28,10 @@ namespace CareBox.DAL.Configurations
                    .HasDefaultValueSql("GETDATE()")
                    .IsRequired();
 
+            builder.Property(i => i.IsDraft)
+                   .IsRequired()
+                   .HasDefaultValue(true);
+
             // Relationship with Booking
             builder.HasOne(i => i.Booking)
                    .WithOne(b => b.Invoice)
