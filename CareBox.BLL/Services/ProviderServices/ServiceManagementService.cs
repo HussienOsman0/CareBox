@@ -39,7 +39,7 @@ namespace CareBox.BLL.Services.ProviderServices
             var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.ServiceProviderId == userId);
             if (provider == null)
                 throw new Exception("Provider not found");
-            var services = await _unitOfWork.Services.FindAllAsync(s => s.ServiceProviderId == provider.ServiceProviderId);
+            var services = await _unitOfWork.Services.FindAllAsync(s => s.ServiceProviderId == provider.ServiceProviderId&&s.ServiceCategoryId==null);
             if (services == null || !services.Any())
                 throw new Exception("No services found for this provider");
 
@@ -68,7 +68,8 @@ namespace CareBox.BLL.Services.ProviderServices
                 ServiceId = s.ServiceId,
                 ServiceName = s.ServiceName,
                 Description = s.Description,
-                Price = s.Price
+                Price = s.Price,
+                CategoryName=s.ServiceCategoryId != null ? _unitOfWork.ServiceCategories.FindAsync(c => c.Id == s.ServiceCategoryId.Value).Result.Name : "No CategoryName"
             });
         } 
         #endregion
@@ -106,13 +107,41 @@ namespace CareBox.BLL.Services.ProviderServices
             {
                 throw new Exception($"You already have a service named '{dto.ServiceName}'");
             }
+
+            // اللوجيك الجديد الخاص بالـ Category
+            int? categoryId = null;
+
+            if (!string.IsNullOrWhiteSpace(dto.CategoryName))
+            {
+                // بندور هل الـ Category ده موجود قبل كده ولا لأ (يفضل تتجاهل حالة الأحرف)
+                var category = await _unitOfWork.ServiceCategories.FindAsync(
+                    c => c.Name.ToLower() == dto.CategoryName.ToLower() && c.ServiceProviderId == provider.ServiceProviderId
+                );
+
+                if (category == null)
+                {
+                    // لو مش موجود، بنكريت واحد جديد
+                    category = new ServiceCategory {
+                        Name = dto.CategoryName,
+                        ServiceProviderId = provider.ServiceProviderId
+                    };
+                    await _unitOfWork.ServiceCategories.AddAsync(category);
+
+                    // لازم نعمل Save هنا عشان الـ ID بتاع الـ Category الجديد يتولد ونقدر نستخدمه
+                    await _unitOfWork.SaveAsync();
+                }
+
+                categoryId = category.Id;
+            }
+
+
             var newService = new Service
             {
                 ServiceProviderId = provider.ServiceProviderId,
                 ServiceName = dto.ServiceName,
                 Description = dto.Description,
-                Price = dto.Price
-
+                Price = dto.Price,
+                ServiceCategoryId = categoryId // هينزل بـ null لو اليوزر مبعتوش، أو هياخد الـ ID لو اتبعت
             };
 
             await _unitOfWork.Services.AddAsync(newService);
@@ -123,10 +152,12 @@ namespace CareBox.BLL.Services.ProviderServices
                 ServiceId = newService.ServiceId,
                 ServiceName = newService.ServiceName,
                 Description = newService.Description,
-                Price = newService.Price
+                Price = newService.Price,
+                CategoryName = dto.CategoryName?? "No CategoryName " // بنرجع الاسم اللي اليوزر بعته
             };
-
         }
+
+        
 
         #endregion
 
@@ -143,7 +174,30 @@ namespace CareBox.BLL.Services.ProviderServices
             service.ServiceName = dto.ServiceName;
             service.Description = dto.Description;
             service.Price = dto.Price;
+            // === اللوجيك الخاص بتحديث الـ Category ===
+            if (!string.IsNullOrWhiteSpace(dto.CategoryName))
+            {
+                // بندور على الـ Category بنفس الاسم
+                var category = await _unitOfWork.ServiceCategories.FindAsync(
+                    c => c.Name.ToLower() == dto.CategoryName.ToLower()&&c.ServiceProviderId == provider.ServiceProviderId
+                );
 
+                if (category == null)
+                {
+                    // لو مش موجود نكريت واحد جديد
+                    category = new ServiceCategory { Name = dto.CategoryName, ServiceProviderId = provider.ServiceProviderId };
+                    await _unitOfWork.ServiceCategories.AddAsync(category);
+                    await _unitOfWork.SaveAsync(); // بنسيف هنا عشان الـ ID الجديد يتولد
+                }
+
+                // بنربط الـ Service بالـ Category (سواء القديم اللي لقيناه أو الجديد اللي اتكريت)
+                service.ServiceCategoryId = category.Id;
+            }
+            else
+            {
+                // لو اليوزر بعت الـ CategoryName فاضي أو null، معناها إنه عاوز يشيل الخدمة دي من أي Category
+                service.ServiceCategoryId = null;
+            }
             _unitOfWork.Services.Update(service);
             await _unitOfWork.SaveAsync();
 
@@ -152,7 +206,8 @@ namespace CareBox.BLL.Services.ProviderServices
                 ServiceId = service.ServiceId,
                 ServiceName = service.ServiceName,
                 Description = service.Description,
-                Price = service.Price
+                Price = service.Price,
+                CategoryName = dto.CategoryName ?? "No CategoryName "
             };
         }
         #endregion
@@ -175,6 +230,99 @@ namespace CareBox.BLL.Services.ProviderServices
         }
         #endregion
 
+
+
+
+        #region GetCategoriesForProvider
+        public async Task<IEnumerable<ServiceCategoryDto>> GetCategoriesForProviderAsync(int providerId)
+        {
+
+
+            // 1. نجيب كل الخدمات بتاعت البروفايدر ده اللي مربوطة بـ Category
+            var providerServices = await _unitOfWork.Services.FindAllAsync(
+                s => s.ServiceProviderId == providerId && s.ServiceCategoryId != null
+            );
+
+            // 2. نستخرج الـ IDs بتاعت الأقسام دي (بدون تكرار)
+            var categoryIds = providerServices
+                .Select(s => s.ServiceCategoryId.Value)
+                .Distinct()
+                .ToList();
+
+            if (!categoryIds.Any())
+                return new List<ServiceCategoryDto>(); // لو معندوش أقسام نرجع لستة فاضية
+
+            // 3. نجيب بيانات الأقسام من جدول الـ Categories بناءً على الـ IDs
+            var categories = await _unitOfWork.ServiceCategories.FindAllAsync(
+                c => categoryIds.Contains(c.Id)
+            );
+
+            return categories.Select(c => new ServiceCategoryDto
+            {
+                CategoryId = c.Id,
+                CategoryName = c.Name
+            });
+        } 
+        #endregion
+
+        #region Get My Categories for provider
+        public async Task<IEnumerable<ServiceCategoryDto>> GetMyCategoriesAsync(int userId)
+        {
+            var provider = await GetProviderByUserIdAsync(userId);
+
+            // 1. نجيب كل الخدمات بتاعت البروفايدر ده اللي مربوطة بـ Category
+            var providerServices = await _unitOfWork.Services.FindAllAsync(
+                s => s.ServiceProviderId == provider.ServiceProviderId && s.ServiceCategoryId != null
+            );
+
+            // 2. نستخرج الـ IDs بتاعت الأقسام دي (بدون تكرار)
+            var categoryIds = providerServices
+                .Select(s => s.ServiceCategoryId.Value)
+                .Distinct()
+                .ToList();
+
+            if (!categoryIds.Any())
+                return new List<ServiceCategoryDto>(); // لو معندوش أقسام نرجع لستة فاضية
+
+            // 3. نجيب بيانات الأقسام من جدول الـ Categories بناءً على الـ IDs
+            var categories = await _unitOfWork.ServiceCategories.FindAllAsync(
+                c => categoryIds.Contains(c.Id)
+            );
+
+            return categories.Select(c => new ServiceCategoryDto
+            {
+                CategoryId = c.Id,
+                CategoryName = c.Name
+            });
+        }
+        #endregion
+
+        #region Get Services By Category
+        public async Task<IEnumerable<ServiceDto>> GetServicesByCategoryIdAsync(int prociderId, int categoryId)
+        {
+            
+
+            // بنجيب الخدمات اللي تبع البروفايدر ده وكمان تبع الـ Category ده
+            var services = await _unitOfWork.Services.FindAllAsync(
+                s => s.ServiceProviderId == prociderId && s.ServiceCategoryId == categoryId
+            );
+
+            if (services == null || !services.Any())
+                throw new Exception("No services found in this category.");
+
+            // عشان نرجع اسم القسم في الـ DTO، هنجيبه الأول
+            var category = await _unitOfWork.ServiceCategories.FindAsync(c => c.Id == categoryId);
+
+            return services.Select(s => new ServiceDto
+            {
+                ServiceId = s.ServiceId,
+                ServiceName = s.ServiceName,
+                Description = s.Description,
+                Price = s.Price,
+                CategoryName = category?.Name // بنبعت اسم القسم
+            });
+        }
+        #endregion
 
 
 

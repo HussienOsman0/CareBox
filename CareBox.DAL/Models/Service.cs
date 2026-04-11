@@ -17,6 +17,10 @@ namespace CareBox.DAL.Models
         public string? Description { get; set; } 
         public decimal Price { get; set; }
 
+        // التعديل الجديد: Foreign Key للـ Category ويكون Nullable
+        public int? ServiceCategoryId { get; set; }
+        public virtual ServiceCategory? ServiceCategory { get; set; }
+
         // العلاقة مع BookingService (علاقة متعددة إلى متعددة) new
         public virtual ICollection<BookingService> BookingServices { get; set; } = new List<BookingService>();
     }

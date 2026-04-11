@@ -17,5 +17,7 @@ namespace CareBox.BLL.DTOs.ProviderDto.Services
         [Required]
         [Range(0, double.MaxValue)]
         public decimal Price { get; set; }
+
+        public string? CategoryName { get; set; }
     }
 }

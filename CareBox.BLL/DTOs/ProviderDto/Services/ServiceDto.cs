@@ -12,6 +12,9 @@ namespace CareBox.BLL.DTOs.ProviderDto.Services
         public string ServiceName { get; set; }
         public string? Description { get; set; }
         public decimal Price { get; set; }
+
+        // ضيف البروبيرتي دي عشان ترجع لليوزر
+        public string? CategoryName { get; set; }
     }
         
 

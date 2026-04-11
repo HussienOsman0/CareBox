@@ -24,7 +24,9 @@ namespace CareBox.BLL.Services.ProviderServices.Interfaces
         // حذف خدمة
         Task<bool> DeleteServiceAsync(int userId, int serviceId);
 
-
+        Task<IEnumerable<ServiceCategoryDto>> GetCategoriesForProviderAsync(int providerId);
+        Task<IEnumerable<ServiceCategoryDto>> GetMyCategoriesAsync(int userId);
+        Task<IEnumerable<ServiceDto>> GetServicesByCategoryIdAsync(int userId, int categoryId);
 
         Task<IEnumerable<ServiceDto>> GetProviderServicesAsync(int userId);
     }

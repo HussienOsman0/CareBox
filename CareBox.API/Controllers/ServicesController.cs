@@ -1,10 +1,12 @@
 ﻿using CareBox.BLL.DTOs.ProviderDto.Services;
+using CareBox.BLL.Services.ProviderServices;
 using CareBox.BLL.Services.ProviderServices.Interfaces;
 using CareBox.DAL.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CareBox.API.Controllers
 {
@@ -153,10 +155,78 @@ namespace CareBox.API.Controllers
             {
                 return BadRequest(new { success = false, message = ex.Message });
             }
-        } 
+        }
         #endregion
 
 
+
+
+
+        #region GetMyCategories to provider
+        [Authorize(Roles = "SERVICEPROVIDER")]
+        [HttpGet("my-categories")]
+        public async Task<IActionResult> GetMyCategories()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var categories = await _serviceManagement.GetMyCategoriesAsync(userId);
+                return Ok(new
+                {
+                    success = true,
+                    data = categories
+                });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        } 
+        #endregion
+
+        #region ProviderCategories To Client
+        [Authorize(Roles = "CLIENT")]
+        [HttpGet("Providercategories/{ProviderId}")]
+        public async Task<IActionResult> ProviderCategories(int ProviderId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var categories = await _serviceManagement.GetCategoriesForProviderAsync(ProviderId);
+                return Ok(new
+                {
+                    success = true,
+                    data = categories
+                });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+        #endregion
+
+        #region GetServicesByCategory to Client
+        [Authorize(Roles = "CLIENT")]
+        [HttpGet("ProviderServicesByCategory/{ProviderId}/{categoryId}")]
+        public async Task<IActionResult> GetServicesByCategory(int ProviderId, int categoryId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var services = await _serviceManagement.GetServicesByCategoryIdAsync(ProviderId, categoryId);
+                return Ok(new
+                {
+                    success = true,
+                    data = services
+                });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        } 
+        #endregion
 
     }
 }

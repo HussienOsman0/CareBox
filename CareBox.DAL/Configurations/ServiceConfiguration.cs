@@ -36,6 +36,14 @@ namespace CareBox.DAL.Configurations
                    .WithMany(sp => sp.Services)
                    .HasForeignKey(s => s.ServiceProviderId)
                    .OnDelete(DeleteBehavior.Cascade);
+
+            // جوه ملف ServiceConfiguration.cs
+            // ضيف السطور دي مع باقي إعداداتك:
+            builder.HasOne(s => s.ServiceCategory)
+                   .WithMany(sc => sc.Services)
+                   .HasForeignKey(s => s.ServiceCategoryId)
+                   .OnDelete(DeleteBehavior.SetNull) // <-- دي التريكة عشان لو مسحت قسم، الخدمات تفضل موجودة بس من غير قسم
+                   .IsRequired(false);
         }
     }
 }

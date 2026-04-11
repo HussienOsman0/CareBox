@@ -15,5 +15,8 @@ namespace CareBox.BLL.DTOs.ProviderDto.Services
         [Required]
         [Range(0,double.MaxValue,ErrorMessage = "Price must be greater than 0")]
         public decimal Price { get; set; }
+
+        // ضيف البروبيرتي دي
+        public string? CategoryName { get; set; }
     }
 }

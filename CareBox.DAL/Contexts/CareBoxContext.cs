@@ -35,6 +35,8 @@ namespace CareBox.DAL.Contexts
         #region Services & Products Module
         public DbSet<Service> Services { get; set; }
         public DbSet<Product> Products { get; set; }
+
+        public DbSet<ServiceCategory> ServiceCategories { get; set; }
         #endregion
 
         #region Bookings & Orders Module
