@@ -142,6 +142,34 @@ namespace CareBox.BLL.Services.ReviewServices
         #endregion
 
 
+        #region Get All Provider Reviews for client
+        public async Task<IEnumerable<ReviewResponseDto>> GetAllProviderReviewsforClientAsync(int providerId)
+        {
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(c => c.ServiceProviderId== providerId);
+            if (provider == null) throw new Exception("provider not found.");
+
+            // 2. جلب كل التقييمات الخاصة بهذا العميل لجميع الورش
+            var reviews = await _unitOfWork.Reviews.FindAllAsync(
+                r => r.ServiceProviderId == provider.ServiceProviderId,
+                new[] { "Client" }
+            );
+
+            // 3. تحويل البيانات وترتيبها من الأحدث للأقدم
+            var response = reviews.Select(r => new ReviewResponseDto
+            {
+                ReviewId = r.ReviewId,
+                ClientName = r.Client.FullName, // اسم العميل اللي عمل التقييم
+                Rating = r.Rating,
+                Comment = r.Comment,
+                CreatedAt = r.CreatedAt
+
+            }).OrderByDescending(r => r.CreatedAt).ToList();
+
+            return response;
+        }
+        #endregion
+
+
 
         public async Task<bool> UpdateReviewAsync(int userId, int reviewId, UpdateReviewDto model)
         {

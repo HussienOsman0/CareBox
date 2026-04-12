@@ -136,6 +136,35 @@ namespace CareBox.API.Controllers
         }
         #endregion
 
+
+        #region GetAllProviderReviews
+        [HttpGet("ProvidertReviewsForClient/{providerID}")]
+        [Authorize(Roles = "CLIENT")] // العميل فقط
+        public async Task<IActionResult> ProvidertReviewsForClient(int providerID)
+        {
+            try
+            {
+                // 1. استخراج الـ ID من التوكن
+                var userId = GetUserID();
+
+                // 2. استدعاء الخدمة
+                var reviews = await _reviewService.GetAllProviderReviewsforClientAsync(providerID);
+
+                // 3. إرجاع النتيجة
+                return Ok(new
+                {
+                    success = true,
+                    data = reviews
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+        #endregion
+
+
         #region UpdateReview
         [HttpPut("UpdateReview/{reviewId}")]
         [Authorize(Roles = "CLIENT")] // العميل فقط

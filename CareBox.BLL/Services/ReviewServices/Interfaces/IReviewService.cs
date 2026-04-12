@@ -13,6 +13,7 @@ namespace CareBox.BLL.Services.ReviewServices.Interfaces
         Task<IEnumerable<ReviewResponseDto>> GetClientReviewsForProviderAsync(int clientId, int providerId);
         Task<IEnumerable<ReviewResponseDto>> GetAllClientReviewsAsync(int userId);
         Task<IEnumerable<ReviewResponseDto>> GetAllProviderReviewsAsync(int providerId);
+        Task<IEnumerable<ReviewResponseDto>> GetAllProviderReviewsforClientAsync(int providerId);
 
         Task<bool> UpdateReviewAsync(int userId, int reviewId, UpdateReviewDto model);
         Task<bool> DeleteReviewAsync(int userId, int reviewId);
