@@ -38,6 +38,12 @@ namespace CareBox.DAL.Configurations
                    .WithMany(c => c.Orders)
                    .HasForeignKey(o => o.ClientId)
                    .OnDelete(DeleteBehavior.Cascade);
+
+            //Relationship ServiceProvider
+            builder.HasOne(o => o.ServiceProvider)
+           .WithMany(p => p.Orders) // اللي ضفناها في الموديل فوق
+           .HasForeignKey(o => o.ServiceProviderId)
+           .OnDelete(DeleteBehavior.NoAction);
         }
     }
 }

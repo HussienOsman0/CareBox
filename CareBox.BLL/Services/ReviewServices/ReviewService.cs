@@ -28,12 +28,12 @@ namespace CareBox.BLL.Services.ReviewServices
             if (client == null) throw new Exception("Client not found.");
 
             // 2. التحقق: هل يوجد حجز واحد على الأقل حالته Completed بين هذا العميل وهذه الورشة؟
-            var hasCompletedBooking = await _unitOfWork.Bookings.FindAsync(b =>
+            var hasCompletedBooking = await _unitOfWork.Bookings.IsExistAsync(b =>
                 b.ClientId == client.ClientID &&
                 b.ServiceProviderId == model.ServiceProviderId &&
                 b.Status == BookingStatus.Completed);
 
-            if (hasCompletedBooking == null)
+            if (!hasCompletedBooking)
                 throw new Exception("You can only review this provider after completing at least one service with them.");
 
 

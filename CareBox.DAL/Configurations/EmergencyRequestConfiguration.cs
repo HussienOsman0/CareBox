@@ -50,9 +50,9 @@ namespace CareBox.DAL.Configurations
                    .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(er => er.ServiceProvider)
-                   .WithMany()
+                   .WithMany(p => p.EmergencyRequests)
                    .HasForeignKey(er => er.ServiceProviderId)
-                   .OnDelete(DeleteBehavior.Restrict);
+                   .OnDelete(DeleteBehavior.NoAction);
 
             builder.HasOne(er => er.AssignedTechnician)
                    .WithMany(t => t.EmergencyRequests)

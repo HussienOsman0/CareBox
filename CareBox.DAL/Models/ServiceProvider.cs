@@ -37,6 +37,11 @@ namespace CareBox.DAL.Models
         public virtual ICollection<Product> Products { get; set; } 
         public virtual ICollection<Booking> Bookings { get; set; }
         public virtual ICollection<Review> Reviews { get; set; }
+
+        public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
+        public virtual ICollection<EmergencyRequest> EmergencyRequests { get; set; } = new List<EmergencyRequest>();
+
+
         // ضيف دي مع باقي الـ ICollection اللي عندك
         public virtual ICollection<ServiceCategory> ServiceCategories { get; set; } = new List<ServiceCategory>();
     }

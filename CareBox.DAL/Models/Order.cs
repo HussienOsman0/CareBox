@@ -18,6 +18,9 @@ namespace CareBox.DAL.Models
         public OrderStatus Status { get; set; } 
         public decimal TotalAmount { get; set; }
 
+        public int ServiceProviderId { get; set; } // 
+        public virtual ServiceProvider ServiceProvider { get; set; }
+
 
         public virtual Invoice? Invoice { get; set; }
 

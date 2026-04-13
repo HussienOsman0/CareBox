@@ -138,7 +138,7 @@ namespace CareBox.API.Controllers
 
 
         #region GetAllProviderReviews
-        [HttpGet("ProvidertReviewsForClient/{providerID}")]
+        [HttpGet("ProviderReviewsForClient/{providerID}")]
         [Authorize(Roles = "CLIENT")] // العميل فقط
         public async Task<IActionResult> ProvidertReviewsForClient(int providerID)
         {

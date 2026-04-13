@@ -8,6 +8,8 @@ using CareBox.BLL.Services.BookingManagementService;
 using CareBox.BLL.Services.BookingManagementService.Interfaces;
 using CareBox.BLL.Services.ClientServices;
 using CareBox.BLL.Services.ClientServices.Interfaces;
+using CareBox.BLL.Services.DashboardServices;
+using CareBox.BLL.Services.DashboardServices.Interfaces;
 using CareBox.BLL.Services.EmailServices;
 using CareBox.BLL.Services.EmailServices.Interfaces;
 using CareBox.BLL.Services.EmailServices.Settings;
@@ -27,6 +29,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+
 
 namespace CareBox.API
 {
@@ -70,8 +73,10 @@ namespace CareBox.API
             builder.Services.AddScoped<IBookingManagementService, BookingManagementService>();
             builder.Services.AddScoped<IReviewService, ReviewService>();
             builder.Services.AddScoped<IInvoiceManagementService, InvoiceManagementService>();
+            builder.Services.AddScoped<IDashboardService, DashboardService>();
 
             #endregion
+
 
             #region EmailServies
 

@@ -18,16 +18,16 @@ namespace CareBox.DAL.Models
         public int VehicleId { get; set; } 
         public virtual Vehicle Vehicle { get; set; }
 
-        public EmergencyRequestType RequestType { get; set; } // 
+        public EmergencyRequestType RequestType { get; set; } //
 
 
         public virtual Invoice? Invoice { get; set; }
 
 
         // GEOGRAPHY (Point)
-        public Point RequestLocation { get; set; } 
+        public Point RequestLocation { get; set; }
 
-        public RequestStatus Status { get; set; } // 
+        public RequestStatus Status { get; set; } //
 
         public int ServiceProviderId { get; set; } // 
         public virtual ServiceProvider ServiceProvider { get; set; }
