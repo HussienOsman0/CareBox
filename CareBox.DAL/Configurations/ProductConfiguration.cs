@@ -48,16 +48,44 @@ namespace CareBox.DAL.Configurations
                    .HasColumnType("smallint")
                    .IsRequired();
 
-            //StockStatus (Int)
+            // --- Enums ---
+            // StockStatus
             builder.Property(p => p.StockStatus)
                    .HasColumnType(DBTypes.Int)
                    .IsRequired();
+            // Condition
+            builder.Property(p => p.Condition)
+                   .HasColumnType(DBTypes.Int)
+                   .IsRequired();
 
-           // Relationship ServiceProvider
+            // HorizontalPosition (Nullable Int)
+            builder.Property(p => p.HorizontalPosition)
+                   .HasColumnType(DBTypes.Int)
+                   .IsRequired(false);
+
+            // VerticalPosition (Nullable Int)
+            builder.Property(p => p.VerticalPosition)
+                   .HasColumnType(DBTypes.Int)
+                   .IsRequired(false);
+
+
+            builder.Property(p => p.StockQuantity)
+                   .HasColumnType(DBTypes.Int)
+                   .IsRequired()
+                   .HasDefaultValue(0);
+
+
+
+            // Relationship ServiceProvider
             builder.HasOne(p => p.ServiceProvider)
                    .WithMany(sp => sp.Products)
                    .HasForeignKey(p => p.ServiceProviderId)
                    .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(p => p.ProductCategory)
+                   .WithMany(pc => pc.Products) // تأكد أن كلاس ProductCategory يحتوي على ICollection<Product>
+                   .HasForeignKey(p => p.ProductCategoryId)
+                   .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

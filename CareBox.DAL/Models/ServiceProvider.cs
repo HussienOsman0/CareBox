@@ -43,6 +43,8 @@ namespace CareBox.DAL.Models
 
 
         // ضيف دي مع باقي الـ ICollection اللي عندك
+        // أضف هذه الخاصية داخل class ServiceProvider
+        public virtual ICollection<ProductCategory> ProductCategories { get; set; }
         public virtual ICollection<ServiceCategory> ServiceCategories { get; set; } = new List<ServiceCategory>();
     }
 }

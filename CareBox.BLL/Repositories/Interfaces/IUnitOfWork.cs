@@ -25,7 +25,8 @@ namespace CareBox.BLL.Repositories.Interfaces
         // Services & Products Module
         IGenericRepository<Service> Services { get; }
         IGenericRepository<Product> Products { get; }
-
+        IGenericRepository<ProductCategory> ProductCategorys { get; }
+        
         public IGenericRepository<ServiceCategory> ServiceCategories { get; }
 
         // Bookings & Orders Module
