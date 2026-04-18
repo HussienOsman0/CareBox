@@ -25,7 +25,11 @@ namespace CareBox.DAL.Models
         public string Make { get; set; }
         public short Year { get; set; }
 
+        public string? ProductImageUrl { get; set; } 
         public int StockQuantity { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime UpdatedAt { get; set; } = DateTime.Now;
 
         //Enums
         public StockStatus StockStatus { get; set; }

@@ -4,6 +4,7 @@ using CareBox.DAL.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 
@@ -12,9 +13,11 @@ using NetTopologySuite.Geometries;
 namespace CareBox.DAL.Migrations
 {
     [DbContext(typeof(CareBoxContext))]
-    partial class CareBoxContextModelSnapshot : ModelSnapshot
+    [Migration("20260417134715_AddToProductCreatedAtAndUpdatedAt")]
+    partial class AddToProductCreatedAtAndUpdatedAt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -533,7 +536,12 @@ namespace CareBox.DAL.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar");
 
+                    b.Property<int>("ServiceProviderId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ServiceProviderId");
 
                     b.ToTable("ProductCategories");
                 });
@@ -1207,6 +1215,17 @@ namespace CareBox.DAL.Migrations
                     b.Navigation("ServiceProvider");
                 });
 
+            modelBuilder.Entity("CareBox.DAL.Models.ProductCategory", b =>
+                {
+                    b.HasOne("CareBox.DAL.Models.ServiceProvider", "ServiceProvider")
+                        .WithMany("ProductCategories")
+                        .HasForeignKey("ServiceProviderId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("ServiceProvider");
+                });
+
             modelBuilder.Entity("CareBox.DAL.Models.ProviderImage", b =>
                 {
                     b.HasOne("CareBox.DAL.Models.ServiceProvider", "ServiceProvider")
@@ -1477,6 +1496,8 @@ namespace CareBox.DAL.Migrations
                     b.Navigation("EmergencyRequests");
 
                     b.Navigation("Orders");
+
+                    b.Navigation("ProductCategories");
 
                     b.Navigation("Products");
 

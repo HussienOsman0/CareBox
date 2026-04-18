@@ -48,6 +48,18 @@ namespace CareBox.DAL.Configurations
                    .HasColumnType("smallint")
                    .IsRequired();
 
+            //ImageUrl
+            builder.Property(p => p.ProductImageUrl)
+                   .HasColumnType("varchar(max)");
+
+            builder.Property(p => p.CreatedAt)
+                   .HasColumnType(DBTypes.DateTime2)
+                   .HasDefaultValueSql("GETDATE()");
+            
+            builder.Property(p => p.UpdatedAt)
+                   .HasColumnType(DBTypes.DateTime2)
+                   .HasDefaultValueSql("GETDATE()");
+
             // --- Enums ---
             // StockStatus
             builder.Property(p => p.StockStatus)

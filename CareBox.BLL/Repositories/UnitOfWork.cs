@@ -34,7 +34,7 @@ namespace CareBox.BLL.Repositories
             Services = new GenericRepository<Service>(_context);
             Products = new GenericRepository<Product>(_context);
 
-            ProductCategorys= new GenericRepository<ProductCategory>(_context);
+            ProductCategories= new GenericRepository<ProductCategory>(_context);
 
             ServiceCategories = new GenericRepository<ServiceCategory>(_context);
 
@@ -71,7 +71,7 @@ namespace CareBox.BLL.Repositories
         public IGenericRepository<ServiceCategory> ServiceCategories { get; }
         public IGenericRepository<Service> Services { get; }
         public IGenericRepository<Product> Products { get; }
-        public IGenericRepository<ProductCategory> ProductCategorys { get; }
+        public IGenericRepository<ProductCategory> ProductCategories { get; }
         
 
         public IGenericRepository<Booking> Bookings { get; }

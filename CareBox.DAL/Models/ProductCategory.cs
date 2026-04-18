@@ -12,8 +12,6 @@ namespace CareBox.DAL.Models
         public string Name { get; set; } = null!;
 
         // مربوطة بالـ Provider لضمان الخصوصية
-        public int ServiceProviderId { get; set; }
-        public virtual ServiceProvider ServiceProvider { get; set; } = null!;
 
         public virtual ICollection<Product> Products { get; set; } = new List<Product>();
     }

@@ -22,11 +22,7 @@ namespace CareBox.DAL.Configurations
                    .HasMaxLength(100)
                    .IsRequired();
 
-            // إعداد علاقة One-to-Many بين مزود الخدمة (ServiceProvider) وفئة المنتجات (ProductCategory)
-            builder.HasOne(pc => pc.ServiceProvider)
-                   .WithMany(sp => sp.ProductCategories) // تأكد من إضافة ICollection<ProductCategory> داخل موديل ServiceProvider
-                   .HasForeignKey(pc => pc.ServiceProviderId)
-                   .OnDelete(DeleteBehavior.NoAction); // عند حذف مزود الخدمة، يتم حذف فئات المنتجات الخاصة به
+           
         }
     }
 }

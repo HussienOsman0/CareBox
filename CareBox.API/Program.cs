@@ -17,6 +17,8 @@ using CareBox.BLL.Services.FileServices;
 using CareBox.BLL.Services.FileServices.Interfaces;
 using CareBox.BLL.Services.InvoiceManagementService;
 using CareBox.BLL.Services.InvoiceManagementService.Interfaces;
+using CareBox.BLL.Services.ProductManagementService;
+using CareBox.BLL.Services.ProductManagementService.Interfaces;
 using CareBox.BLL.Services.ProviderServices;
 using CareBox.BLL.Services.ProviderServices.Interfaces;
 using CareBox.BLL.Services.ReviewServices;
@@ -74,6 +76,9 @@ namespace CareBox.API
             builder.Services.AddScoped<IReviewService, ReviewService>();
             builder.Services.AddScoped<IInvoiceManagementService, InvoiceManagementService>();
             builder.Services.AddScoped<IDashboardService, DashboardService>();
+            builder.Services.AddScoped<IProductManagementService, ProductManagementService>();
+
+
 
             #endregion
 
