@@ -9,7 +9,9 @@ namespace CareBox.DAL.Models
 {
     public class Order
     {
-        public long OrderId { get; set; } 
+        public long OrderId { get; set; }
+
+        public string OrderCode { get; set; } = null!;
 
         public int ClientId { get; set; } 
         public virtual Client Client { get; set; }

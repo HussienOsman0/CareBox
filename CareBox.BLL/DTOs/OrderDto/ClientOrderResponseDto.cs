@@ -9,6 +9,7 @@ namespace CareBox.BLL.DTOs.OrderDto
     public class ClientOrderResponseDto
     {
         public long OrderId { get; set; }
+        public string OrderCode { get; set; } = null!;
         public DateTime OrderDate { get; set; }
         public string Status { get; set; } = null!;
         public decimal TotalAmount { get; set; }

@@ -21,6 +21,21 @@ namespace CareBox.BLL.Services.OrderService
             _unitOfWork = unitOfWork;
         }
 
+        #region Helper
+        // دالة مساعدة لتوليد كود فريد
+        private string GenerateOrderCode()
+        {
+            var random = new Random();
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var randomPart = new string(Enumerable.Repeat(chars, 4)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+
+            // التنسيق: CB-السنة-رقم عشوائي
+            return $"CB-{DateTime.Now.Year}-{randomPart}";
+        }
+
+        #endregion
+
         #region CheckoutAsync
         public async Task<bool> CheckoutAsync(int userId, CheckoutRequestDto dto)
         {
@@ -53,6 +68,7 @@ namespace CareBox.BLL.Services.OrderService
                     var newOrder = new Order
                     {
                         ClientId = client.ClientID,
+                        OrderCode = GenerateOrderCode(),
                         VehicleId = dto.VehicleId,
                         ServiceProviderId = providerGroup.Key, // الـ ProviderId المربوط بالمجموعة دي
                         OrderDate = DateTime.Now,
@@ -152,6 +168,7 @@ namespace CareBox.BLL.Services.OrderService
             return query.OrderByDescending(o => o.OrderDate).Select(o => new ClientOrderResponseDto
             {
                 OrderId = o.OrderId,
+                OrderCode=o.OrderCode,
                 OrderDate = o.OrderDate,
                 Status = o.Status.ToString(),
                 TotalAmount = o.TotalAmount,

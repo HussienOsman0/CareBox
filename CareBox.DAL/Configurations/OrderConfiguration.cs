@@ -38,6 +38,12 @@ namespace CareBox.DAL.Configurations
             builder.Property(o => o.PhoneNumber).HasMaxLength(20);
             builder.Property(o => o.DeliveryNotes).HasMaxLength(1000);
 
+            builder.Property(o => o.OrderCode)
+           .IsRequired()
+           .HasMaxLength(20);
+
+            builder.HasIndex(o => o.OrderCode).IsUnique();
+
             //Relationship Client
             builder.HasOne(o => o.Client)
                    .WithMany(c => c.Orders)
