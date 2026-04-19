@@ -114,11 +114,17 @@ namespace CareBox.BLL.Services.InvoiceManagementService
             var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == userId);
             if (provider == null) throw new Exception("Provider not found.");
 
-            // التعديل هنا: إضافة شرط IsDraft == false
+            // 1. جلب الفواتير مع عمل Include للـ 3 أنظمة (الـ Client جوه كل نظام فيهم)
+            // لاحظ إننا ضفنا Client مباشر كمان تحسباً لو إنت رابط الفاتورة بالعميل مباشرة في الداتابيز
             var invoices = await _unitOfWork.Invoices.FindAllAsync(
-                i => i.Booking.ServiceProviderId == provider.ServiceProviderId && i.IsDraft == false,
-                new[] { "InvoiceDetails", "Booking.Client" }
-            );
+                i => i.IsDraft == false &&
+                     (
+                        (i.Booking != null && i.Booking.ServiceProviderId == provider.ServiceProviderId) ||
+                        (i.Order != null && i.Order.ServiceProviderId == provider.ServiceProviderId) ||
+                        (i.EmergencyRequest != null && i.EmergencyRequest.ServiceProviderId == provider.ServiceProviderId)
+                     ),
+                new[] { "InvoiceDetails", "Booking.Client", "Order.Client", "EmergencyRequest.Client", "Client" });
+
 
             return invoices.OrderByDescending(i => i.IssueDate).Select(i => new ProviderInvoiceResponseDto
             {
@@ -126,7 +132,11 @@ namespace CareBox.BLL.Services.InvoiceManagementService
                 IssueDate = i.IssueDate,
                 TotalAmount = i.TotalAmount,
                 IsDraft = i.IsDraft, // ستكون دائماً false هنا بناءً على الفلتر
-                ClientName = i.Booking?.Client?.FullName ?? "N/A",
+                ClientName = i.Booking?.Client?.FullName ??
+                             i.Order?.Client?.FullName ??
+                             i.EmergencyRequest?.Client?.FullName ?? "N/A",
+
+
                 Items = i.InvoiceDetails.Select(d => new InvoiceItemDto
                 {
                     ItemDescription = d.ItemDescription,
@@ -139,7 +149,7 @@ namespace CareBox.BLL.Services.InvoiceManagementService
 
 
 
-        #region GetProviderInvoiceByBookingId
+        #region GetClientInvoiceByBookingIdAsync
         // 1. عرض تفاصيل الفاتورة للعميل برقم الحجز
         public async Task<ClientInvoiceResponseDto> GetClientInvoiceByBookingIdAsync(int userId, long bookingId)
         {
@@ -175,6 +185,49 @@ namespace CareBox.BLL.Services.InvoiceManagementService
         // 2. عرض تفاصيل الفاتورة لمقدم الخدمة برقم الحجز
 
         #endregion
+
+        #region GetClientInvoiceByOrderIdAsync
+        public async Task<ClientInvoiceResponseDto> GetClientInvoiceByOrderIdAsync(int userId, int orderId)
+        {
+            // 1. التأكد من هوية العميل
+            var client = await _unitOfWork.Clients.FindAsync(c => c.AppUserId == userId);
+            if (client == null) throw new Exception("Client not found.");
+
+            // 2. البحث عن الفاتورة المربوطة بهذا الطلب والعميل، والتأكد أنها ليست مسودة
+            var query = await _unitOfWork.Invoices.FindAllAsync(
+                i => i.OrderId == orderId &&
+                     i.Order != null &&
+                     i.Order.ClientId == client.ClientID &&
+                     i.IsDraft == false,
+                new[] { "InvoiceDetails", "Order.ServiceProvider.ProviderType" } // Include لبيانات التاجر
+            );
+
+            var invoice = query.FirstOrDefault();
+            if (invoice == null)
+                throw new Exception("Invoice not found or it is still a draft.");
+
+            // 3. التحويل للـ DTO
+            return new ClientInvoiceResponseDto
+            {
+                InvoiceId = invoice.InvoiceId,
+                IssueDate = invoice.IssueDate,
+                TotalAmount = invoice.TotalAmount,
+
+                // استخراج اسم التاجر (Provider) ونوعه
+                ProviderName = invoice.Order?.ServiceProvider?.Name ?? "N/A",
+                ProviderType = invoice.Order?.ServiceProvider?.ProviderType?.TypeName ?? "N/A",
+
+                Items = invoice.InvoiceDetails.Select(d => new InvoiceItemDto
+                {
+                    // استخدمنا ItemName أو ItemDescription حسب المتاح في موديل InvoiceDetail
+                    ItemDescription = d.ItemDescription ?? "تفاصيل المنتج",
+                    Price = d.Price
+                }).ToList()
+            };
+        } 
+        #endregion
+
+
 
         #region GetProviderInvoiceByBookingId
         public async Task<ProviderInvoiceResponseDto> GetProviderInvoiceByBookingIdAsync(int userId, long bookingId)

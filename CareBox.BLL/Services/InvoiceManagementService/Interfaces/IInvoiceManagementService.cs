@@ -15,7 +15,10 @@ namespace CareBox.BLL.Services.InvoiceManagementService.Interfaces
         Task<IEnumerable<ClientInvoiceResponseDto>> GetClientInvoicesAsync(int userId);
         Task<IEnumerable<ProviderInvoiceResponseDto>> GetProviderInvoicesAsync(int userId);
 
+
         Task<ClientInvoiceResponseDto> GetClientInvoiceByBookingIdAsync(int userId, long bookingId);
+        Task<ClientInvoiceResponseDto> GetClientInvoiceByOrderIdAsync(int userId, int orderId);
+
         Task<ProviderInvoiceResponseDto> GetProviderInvoiceByBookingIdAsync(int userId, long bookingId);
     }
 }

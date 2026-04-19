@@ -106,8 +106,33 @@ namespace CareBox.API.Controllers
             {
                 return BadRequest(new { success = false, message = ex.Message });
             }
+        }
+        #endregion
+
+
+
+
+
+
+        #region ProviderForSparePartsSummary
+
+        [HttpGet("provider/SparePartsStutes")]
+        public async Task<IActionResult> ProviderForSparePartsSummary()
+        {
+            try
+
+            {
+                var userId = GetCurrentUserId();
+                var result = await _dashboardService.ProviderForSparePartsSummaryAsync(userId);
+                return Ok(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         } 
         #endregion
+
 
     }
 }

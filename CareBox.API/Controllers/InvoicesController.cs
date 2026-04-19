@@ -113,7 +113,7 @@ namespace CareBox.API.Controllers
 
         #region GetInvoiceByBookingId
         [HttpGet("GetInvoiceByBooking/{bookingId}")]
-        [Authorize] // الدالة دي متاحة لأي مستخدم مسجل دخوله (عميل أو مقدم خدمة)
+        [Authorize(Roles = "CLIENT")] // الدالة دي متاحة لأي مستخدم مسجل دخوله (عميل أو مقدم خدمة)
         public async Task<IActionResult> GetInvoiceByBookingId(long bookingId)
         {
             try
@@ -141,6 +141,33 @@ namespace CareBox.API.Controllers
                     Success = false,
                     Message = ex.Message
                 });
+            }
+        }
+        #endregion
+
+
+
+
+
+        #region GetClientInvoiceByOrderId
+        [HttpGet("GetInvoiceByOrderId/{orderId}")]
+        [Authorize(Roles = "CLIENT")]
+        public async Task<IActionResult> GetClientInvoiceByOrderId(int orderId)
+        {
+            try
+            {
+                // استخراج User ID للعميل الحالي
+                var userId = GetCurrentUserId();
+
+
+                // نداء السيرفيس
+                var invoice = await _invoiceManagementService.GetClientInvoiceByOrderIdAsync(userId, orderId);
+
+                return Ok(new { success = true, data = invoice });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
             }
         } 
         #endregion

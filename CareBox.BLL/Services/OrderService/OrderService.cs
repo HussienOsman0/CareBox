@@ -178,5 +178,233 @@ namespace CareBox.BLL.Services.OrderService
             }).ToList();
         }
         #endregion
+
+
+        #region Provider Orders logic
+        public async Task<IEnumerable<ProviderOrderResponseDto>> GetProviderOrdersAsync(int providerId, int? status)
+        {
+            // جلب الـ Provider المرتبط بالمستخدم
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == providerId);
+            if (provider == null) throw new Exception("Provider not found.");
+
+            // جلب الطلبات مع كل العلاقات المطلوبة
+            var orders = await _unitOfWork.Orders.FindAllAsync(
+                o => o.ServiceProviderId == provider.ServiceProviderId,
+                new[] { "Client.AppUser", "Vehicle", "OrderDetails.Product" }
+            );
+
+            var query = orders.AsQueryable();
+
+            // تطبيق الفلترة حسب الحالة لو موجودة
+            if (status.HasValue && status.Value > 0)
+            {
+                query = query.Where(o => (int)o.Status == status.Value);
+            }
+
+            return query.OrderByDescending(o => o.OrderDate).Select(o => new ProviderOrderResponseDto
+            {
+                OrderId = o.OrderId,
+                OrderCode = o.OrderCode,
+                OrderDate = o.OrderDate,
+                ClientName = o.Client.FullName ?? "Unknown Client",
+                CarDetails = o.Vehicle != null ? $"{o.Vehicle.Make} {o.Vehicle.Model} {o.Vehicle.Year}" : "No Car Specified",
+                DeliveryType = o.DeliveryType.ToString(),
+                DeliveryAddress = o.DeliveryAddress,
+                PhoneNumber = o.PhoneNumber,
+                DeliveryNotes = o.DeliveryNotes,
+
+                StatusName = o.Status.ToString(),
+                TotalPrice = o.TotalAmount,
+                Items = o.OrderDetails.Select(d => new ProviderOrderItemDto
+                {
+                    ProductName = d.Product.Name,
+                    Quantity = d.Quantity,
+                    UnitPrice = d.PriceAtPurchase
+                }).ToList()
+            }).ToList();
+        }
+        #endregion
+
+        #region Get Provider Order Stats
+        public async Task<OrderStatusStatsDto> GetProviderOrderStatsAsync(int providerId)
+        {
+            // 1. التأكد من وجود المزود
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == providerId);
+            if (provider == null) throw new Exception("Provider not found.");
+
+            // 2. جلب حالات طلبات التاجر فقط (لا نحتاج لجلب كل البيانات، فقط الـ Status لتقليل الحمل على الداتا بيز)
+            var orders = await _unitOfWork.Orders.FindAllAsync(o => o.ServiceProviderId == provider.ServiceProviderId);
+
+            // 3. تجميع البيانات وحساب العدد لكل حالة
+            var stats = new OrderStatusStatsDto
+            {
+                TotalOrders = orders.Count(),
+                Pending = orders.Count(o => o.Status == DAL.Enums.OrderStatus.Pending),
+                Accepted = orders.Count(o => o.Status == DAL.Enums.OrderStatus.Accepted),
+                Preparing = orders.Count(o => o.Status == DAL.Enums.OrderStatus.preparing),
+                OutForDelivery = orders.Count(o => o.Status == DAL.Enums.OrderStatus.OutForDelivery),
+                ReadyForPickup = orders.Count(o => o.Status == DAL.Enums.OrderStatus.ReadyForPickup),
+                Completed = orders.Count(o => o.Status == DAL.Enums.OrderStatus.Completed),
+                Cancelled = orders.Count(o => o.Status == DAL.Enums.OrderStatus.Cancelled)
+            };
+
+            return stats;
+        }
+        #endregion
+
+
+        #region UpdateOrderStatusAsync
+        //public async Task<bool> UpdateOrderStatusAsync(int userId, int orderId, OrderStatus newStatus)
+        //{
+        //    // 1. جلب المورد والتأكد من هويته
+        //    var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == userId);
+        //    if (provider == null) throw new Exception("Provider not found.");
+
+        //    // 2. جلب الأوردر مع تفاصيله (OrderDetails)
+        //    var order = await _unitOfWork.Orders.FindAsync(
+        //        o => o.OrderId == orderId && o.ServiceProviderId == provider.ServiceProviderId,
+        //        new[] { "OrderDetails" }
+        //    );
+
+        //    if (order == null) throw new Exception("Order not found.");
+
+        //    // 🛡️ بدء الـ Transaction
+        //    using var transaction = await _unitOfWork.BeginTransactionAsync();
+        //    try
+        //    {
+        //        // 3. تحديث حالة الأوردر
+        //        order.Status = newStatus;
+        //        _unitOfWork.Orders.Update(order);
+
+        //        // 4. 👇 لو الحالة "مكتمل"، نكريت الفاتورة أوتوماتيك
+        //        if (newStatus == OrderStatus.Completed)
+        //        {
+        //            var invoice = new Invoice
+        //            {
+        //                OrderId = order.OrderId,
+        //                IssueDate = DateTime.Now,
+        //                TotalAmount = order.TotalAmount,
+        //                IsDraft = false, // فاتورة نهائية
+        //                InvoiceDetails = order.OrderDetails.Select(d => new InvoiceDetail
+        //                {
+        //                    ItemDescription = $"Product ID: {d.Product.Name} (Qty: {d.Quantity})",
+        //                    Price = (d.Quantity * d.PriceAtPurchase)
+        //                }).ToList()
+        //            };
+
+        //            await _unitOfWork.Invoices.AddAsync(invoice);
+        //        }
+
+        //        // 5. حفظ التغييرات
+        //        await _unitOfWork.SaveAsync();
+        //        await transaction.CommitAsync();
+
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await transaction.RollbackAsync();
+        //        throw new Exception($"Failed to update status: {ex.Message}");
+        //    }
+        //}
+
+
+        public async Task<bool> UpdateOrderStatusAsync(int userId, long orderId, UpdateOrderStatusDto model)
+        {
+            // 1. البحث عن الطلب (استخدام FindAllAsync لجلب الجداول المرتبطة مثل المنتجات والفاتورة)
+            var query = await _unitOfWork.Orders.FindAllAsync(
+                o => o.OrderId == orderId,
+                new[] { "OrderDetails.Product", "Invoice" }
+            );
+
+            var order = query.FirstOrDefault();
+            if (order == null)
+                throw new Exception("Order not found.");
+
+            // 2. التحقق من صلاحيات المستخدم (هل هو العميل صاحب الطلب أم التاجر؟)
+            var client = await _unitOfWork.Clients.FindAsync(c => c.AppUserId == userId);
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == userId);
+
+            bool isClient = client?.ClientID == order.ClientId;
+            bool isProvider = provider?.ServiceProviderId == order.ServiceProviderId;
+
+            if (!isClient && !isProvider)
+                throw new UnauthorizedAccessException("You are not authorized to update this order.");
+
+            // 3. تطبيق قواعد العمل (Business Rules)
+
+            // أ- لا يمكن تعديل طلب تم إلغاؤه أو إكماله مسبقاً
+            if (order.Status == DAL.Enums.OrderStatus.Completed || order.Status == DAL.Enums.OrderStatus.Cancelled)
+                throw new Exception($"Cannot change status of a {order.Status} order.");
+
+            // ب- إذا كان المستخدم هو "العميل"، يحق له الإلغاء فقط
+            if (isClient && model.NewStatus != DAL.Enums.OrderStatus.Cancelled)
+                throw new Exception("Clients are only allowed to cancel orders.");
+
+            // ج- إذا كان "مقدم الخدمة"، لا يمكنه إكمال طلب وهو لا يزال معلقاً (يجب أن يقبله ويجهزه أولاً)
+            if (isProvider && order.Status == DAL.Enums.OrderStatus.Pending && model.NewStatus == DAL.Enums.OrderStatus.Completed)
+                throw new Exception("Cannot complete a pending order directly. It must be accepted and processed first.");
+
+            // 🛡️ بدء الـ Transaction لضمان الحفظ المزدوج (الطلب + الفاتورة) بأمان
+            using var transaction = await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                // 4. تحديث حالة الطلب
+                order.Status = model.NewStatus;
+                _unitOfWork.Orders.Update(order);
+
+                // ----------------------------------------------------
+                // 5. منطق الفواتير (Invoice Logic) - بناءً على طلبك
+                // ----------------------------------------------------
+
+                // إنشاء الفاتورة النهائية مباشرة وفقط عند اكتمال الطلب (Completed)
+                if (model.NewStatus == DAL.Enums.OrderStatus.Completed)
+                {
+                    // التأكد من عدم وجود فاتورة سابقة لتجنب التكرار
+                    if (order.Invoice == null)
+                    {
+                        var invoice = new Invoice
+                        {
+                            OrderId = order.OrderId,
+
+
+                            IssueDate = DateTime.Now,
+                            TotalAmount = order.TotalAmount,
+                            
+                            IsDraft = false, // الفاتورة نهائية مباشرة وليست مسودة
+                            InvoiceDetails = new List<InvoiceDetail>()
+                        };
+
+                        // نقل المنتجات التي اشتراها العميل إلى تفاصيل الفاتورة
+                        foreach (var detail in order.OrderDetails)
+                        {
+                            invoice.InvoiceDetails.Add(new InvoiceDetail
+                            {
+                                ItemDescription = $"{detail.Product.Name} (Qty: {detail.Quantity})",
+                               
+                                Price = (detail.Quantity * detail.PriceAtPurchase),
+                                
+                            });
+                        }
+
+                        await _unitOfWork.Invoices.AddAsync(invoice);
+                    }
+                }
+
+                // 6. حفظ التعديلات في قاعدة البيانات
+                await _unitOfWork.SaveAsync();
+                await transaction.CommitAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // التراجع عن أي تعديل إذا حدث خطأ (مثل فصل الداتا بيز)
+                await transaction.RollbackAsync();
+                throw new Exception($"Failed to update status: {ex.Message}");
+            }
+        }
+
+        #endregion
     }
 }

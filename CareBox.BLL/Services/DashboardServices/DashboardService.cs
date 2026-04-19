@@ -128,6 +128,56 @@ namespace CareBox.BLL.Services.DashboardServices
                 VehicleInfo = $"{b.Vehicle.Make} {b.Vehicle.Model} ({b.Vehicle.PlateNumber})", // تفاصيل العربية
 
             }).ToList();
+        }
+        #endregion
+
+
+
+        #region ProviderForSparePartsSummaryAsync
+        public async Task<ProviderForSparePartsSummaryDto> ProviderForSparePartsSummaryAsync(int userId)
+        {
+            // 1. جلب بيانات الـ Provider
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == userId);
+            if (provider == null) throw new Exception("Provider not found.");
+
+            var currentDate = DateTime.Now;
+
+            // 2. حساب أرباح "الشهر الحالي" من الفواتير المعتمدة
+            var currentMonthInvoices = await _unitOfWork.Invoices.FindAllAsync(
+                i => i.IssueDate.Year == currentDate.Year &&
+                     i.IssueDate.Month == currentDate.Month &&
+                     i.IsDraft == false &&
+                     (
+
+                         (i.Order != null && i.Order.ServiceProviderId == provider.ServiceProviderId)
+
+                     ),
+                new[] { "Order" }
+            );
+
+            decimal currentMonthEarnings = currentMonthInvoices.Sum(i => i.TotalAmount);
+
+            // 3. إحصائيات الطلبات (Orders) باستخدام CountAsync للـ Performance العالي
+            int totalOrders = await _unitOfWork.Orders.CountAsync(
+                o => o.ServiceProviderId == provider.ServiceProviderId
+            );
+
+            int pendingOrders = await _unitOfWork.Orders.CountAsync(
+                o => o.ServiceProviderId == provider.ServiceProviderId && o.Status == DAL.Enums.OrderStatus.Pending
+            );
+
+            int canceledOrders = await _unitOfWork.Orders.CountAsync(
+                o => o.ServiceProviderId == provider.ServiceProviderId && o.Status == DAL.Enums.OrderStatus.Cancelled
+            );
+
+            // 4. إرجاع النتيجة للـ Front-end
+            return new ProviderForSparePartsSummaryDto
+            {
+                CurrentMonthEarnings = currentMonthEarnings,
+                TotalOrders = totalOrders,
+                PendingOrders = pendingOrders,
+                CanceledOrders = canceledOrders
+            };
         } 
         #endregion
 

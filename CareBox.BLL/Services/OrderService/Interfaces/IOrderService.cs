@@ -1,4 +1,5 @@
 ﻿using CareBox.BLL.DTOs.OrderDto;
+using CareBox.DAL.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,5 +14,12 @@ namespace CareBox.BLL.Services.OrderService.Interfaces
         Task<bool> CheckoutAsync(int userId, CheckoutRequestDto dto);
 
         Task<IEnumerable<ClientOrderResponseDto>> GetClientOrdersAsync(int userId, string? filter);
+        Task<IEnumerable<ProviderOrderResponseDto>> GetProviderOrdersAsync(int providerId, int? status);
+
+        Task<OrderStatusStatsDto> GetProviderOrderStatsAsync(int providerId);
+
+        Task<bool> UpdateOrderStatusAsync(int userId, long orderId, UpdateOrderStatusDto model);
     }
+
+
 }

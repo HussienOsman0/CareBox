@@ -10,7 +10,7 @@ namespace CareBox.DAL.Enums
     {
         Pending = 1,        // قيد الانتظار (العميل لسه طالب)
         Accepted = 2,       // التاجر وافق عليه
-        Processing = 3,     // جاري التجهيز
+        preparing = 3,     // جاري التجهيز
 
         OutForDelivery = 4, // في الطريق (لو توصيل)
         ReadyForPickup = 5, // جاهز للاستلام (لو Pick up)

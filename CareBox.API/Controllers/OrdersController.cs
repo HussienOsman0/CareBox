@@ -9,6 +9,7 @@ namespace CareBox.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class OrdersController : ControllerBase
     {
        
@@ -73,8 +74,72 @@ namespace CareBox.API.Controllers
                 {
                     return BadRequest(new { success = false, message = ex.Message });
                 }
-            } 
+            }
+        #endregion
+
+
+
+
+
+            #region GetProviderOrders
+            [HttpGet("Provider/Orders")]
+                [Authorize(Roles = "SERVICEPROVIDER")]
+                public async Task<IActionResult> GetProviderOrders([FromQuery] int? status)
+                {
+                    try
+                    {
+                        var userId = GetCurrentUserId(); // تأكد من وجود الدالة لاستخراج الـ ID من التوكن
+                        var orders = await _orderService.GetProviderOrdersAsync(userId, status);
+                        return Ok(new { success = true, data = orders });
+                    }
+                    catch (Exception ex)
+                    {
+                        return BadRequest(new { success = false, message = ex.Message });
+                    }
+                }
             #endregion
+
+            #region GetProviderStats
+            [HttpGet("provider-ordersStatus")]
+            [Authorize(Roles = "SERVICEPROVIDER")]
+            public async Task<IActionResult> GetProviderStats()
+            {
+                try
+                {
+                    var userId = GetCurrentUserId();
+                    var summary = await _orderService.GetProviderOrderStatsAsync(userId);
+
+                    return Ok(new { success = true, data = summary });
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(new { success = false, message = ex.Message });
+                }
+            }
+            #endregion
+
+            #region UpdateOrderStatus
+            [HttpPut("update-status/{orderId}")]
+            [Authorize(Roles = "SERVICEPROVIDER")]
+            public async Task<IActionResult> UpdateOrderStatus(int orderId, [FromBody] UpdateOrderStatusDto dto)
+            {
+                try
+                {
+                    var userId = GetCurrentUserId();
+                    var result = await _orderService.UpdateOrderStatusAsync(userId, orderId, dto);
+
+                    if (result)
+                        return Ok(new { success = true, message = $"Order status updated to {dto.NewStatus}." });
+
+                    return BadRequest(new { success = false, message = "Could not update order status." });
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(new { success = false, message = ex.Message });
+                }
+            }
+            #endregion
+
 
 
     }

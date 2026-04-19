@@ -16,5 +16,8 @@ namespace CareBox.BLL.Services.DashboardServices.Interfaces
 
         Task<IEnumerable<TodayBookingDto>> GetTodayBookingsAsync(int userId);
 
+        // ضيف السطر ده في IUnitOfWork.cs
+        Task<ProviderForSparePartsSummaryDto> ProviderForSparePartsSummaryAsync(int userId);
+
     }
 }
