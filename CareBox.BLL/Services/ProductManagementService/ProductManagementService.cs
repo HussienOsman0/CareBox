@@ -1,4 +1,5 @@
 ﻿using CareBox.BLL.DTOs.Products;
+using CareBox.BLL.DTOs.ProductsDto;
 using CareBox.BLL.Repositories;
 using CareBox.BLL.Repositories.Interfaces;
 using CareBox.BLL.Services.FileServices.Interfaces;
@@ -10,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NetTopologySuite.Geometries;
 
 
 namespace CareBox.BLL.Services.ProductManagementService
@@ -206,7 +208,76 @@ namespace CareBox.BLL.Services.ProductManagementService
                 Name = c.Name
             });
         }
-       
+
+        public async Task<IEnumerable<ProductCategoryResponseDto>> GetClientCategoriesAsync(int userId)
+        {
+            // الحصول على بيانات الورشة
+            var Client = await _unitOfWork.Clients.FindAsync(c => c.AppUserId == userId);
+            if (Client == null) throw new Exception("Client not found.");
+
+            // جلب الأقسام المرتبطة بهذه الورشة فقط
+            var categories = await _unitOfWork.ProductCategories.GetAllAsync();
+
+            // تحويلها لـ DTO
+            return categories.Select(c => new ProductCategoryResponseDto
+            {
+                Id = c.Id,
+                Name = c.Name
+            });
+        }
+
+
+        #region Get Category Filter Options
+        public async Task<CategoryFilterOptionsDto> GetCategoryFilterOptionsAsync(int categoryId)
+        {
+            // جلب المنتجات التابعة للقسم
+            var products = await _unitOfWork.Products.FindAllAsync(p => p.ProductCategoryId == categoryId);
+
+            var names = products.Select(p => p.Name).Distinct().ToList();
+
+            // استخراج الاتجاهات كأرقام (int) بدون تكرار
+            var horizontalPositions = products
+                .Where(p => p.HorizontalPosition.HasValue)
+                .Select(p => (int)p.HorizontalPosition!.Value)
+                .Distinct()
+                .ToList();
+
+            
+
+            return new CategoryFilterOptionsDto
+            {
+                AvailableProductNames = names,
+                
+            };
+        }
+        #endregion
+
+
+        #region Get Positions By Product Name
+        public async Task<ProductPositionsResponseDto> GetProductPositionsByNameAsync(string productName)
+        {
+            // جلب كل المنتجات اللي بتحمل نفس الاسم (تجاهل حالة الأحرف)
+            var products = await _unitOfWork.Products.FindAllAsync(p => p.Name.ToLower() == productName.ToLower());
+
+            return new ProductPositionsResponseDto
+            {
+                // استخراج الاتجاهات الأفقية المتاحة (بدون تكرار)
+                AvailableHorizontalPositions = products
+                    .Where(p => p.HorizontalPosition.HasValue)
+                    .Select(p => (int)p.HorizontalPosition.Value)
+                    .Distinct()
+                    .ToList(),
+
+                // استخراج الاتجاهات الرأسية المتاحة (بدون تكرار)
+                AvailableVerticalPositions = products
+                    .Where(p => p.VerticalPosition.HasValue)
+                    .Select(p => (int)p.VerticalPosition.Value)
+                    .Distinct()
+                    .ToList()
+            };
+        }
+        #endregion
+
         #endregion
 
 
@@ -326,6 +397,74 @@ namespace CareBox.BLL.Services.ProductManagementService
 
             _unitOfWork.Products.Update(product);
             return await _unitOfWork.SaveAsync() > 0;
+        }
+        #endregion
+
+
+
+
+
+        #region Client / Mobile Search Products
+        public async Task<IEnumerable<ProductSearchResultDto>> SearchProductsForClientAsync(int clientId, ProductSearchRequestDto request, double userLat, double userLon)
+        {
+            var client = await _unitOfWork.Clients.FindAsync(c => c.AppUserId == clientId);
+            if (client == null) throw new Exception("Client not found");
+
+            var products = await _unitOfWork.Products.FindAllAsync(
+                p => p.StockQuantity > 0,
+                new[] { "ServiceProvider", "ProductCategory" }
+            );
+
+            var query = products.AsQueryable();
+
+            // الفلترة بالـ Category
+            if (request.CategoryId.HasValue)
+                query = query.Where(p => p.ProductCategoryId == request.CategoryId.Value);
+
+            // الفلترة بالعربية
+            if (request.VehicleId.HasValue)
+            {
+                var vehicle = await _unitOfWork.Vehicles.FindAsync(v => v.VehicleId == request.VehicleId.Value && v.ClientId == client.ClientID);
+                if (vehicle != null)
+                {
+                    query = query.Where(p => p.Make == vehicle.Make && p.ForModel == vehicle.Model && p.Year == vehicle.Year);
+                }
+            }
+
+            // الفلترة بالاسم
+            if (!string.IsNullOrWhiteSpace(request.ProductName))
+                query = query.Where(p => p.Name.ToLower().Contains(request.ProductName.ToLower()));
+
+            // الفلترة بالاتجاهات
+            if (request.HorizontalPosition.HasValue)
+                query = query.Where(p => p.HorizontalPosition == (DAL.Enums.HorizontalPosition)request.HorizontalPosition.Value);
+
+            if (request.VerticalPosition.HasValue)
+                query = query.Where(p => p.VerticalPosition == (DAL.Enums.VerticalPosition)request.VerticalPosition.Value);
+
+            
+
+            // 📍 إنشاء نقطة موقع العميل (ملاحظة: Point تأخذ X ثم Y أي Longitude ثم Latitude)
+            var userLocation = new Point(userLon, userLat) { SRID = 4326 };
+
+           
+            // تنفيذ الـ Select وحساب المسافة
+            var result = query.Select(p => new ProductSearchResultDto
+            {   
+                    ProductId = p.ProductId,
+                    ProductName = p.Name,
+                    ProductImage = p.ProductImageUrl ?? "No Image",
+                    ProviderName = p.ServiceProvider.Name,
+                    Condition = p.Condition.ToString(),
+                    StockStatus=p.StockStatus.ToString(),
+                    Price = p.Price,
+                    DistanceKm = p.ServiceProvider != null && p.ServiceProvider.Location != null
+                    ? Math.Round(p.ServiceProvider.Location.Distance(userLocation) * 111.32, 2)
+                    : 0
+            }).ToList();
+
+            // ترتيب المنتجات من الأقرب للأبعد
+            return result;
         }
         #endregion
     }

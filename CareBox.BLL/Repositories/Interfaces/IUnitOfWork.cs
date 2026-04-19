@@ -36,6 +36,9 @@ namespace CareBox.BLL.Repositories.Interfaces
         IGenericRepository<Order> Orders { get; }
         IGenericRepository<OrderDetail> OrderDetails { get; }
 
+        IGenericRepository<Cart> Carts { get; }
+        IGenericRepository<CartItem> CartItems { get; }
+
         // Emergency & Reviews Module
         IGenericRepository<EmergencyRequest> EmergencyRequests { get; }
         IGenericRepository<Review> Reviews { get; }
@@ -49,6 +52,8 @@ namespace CareBox.BLL.Repositories.Interfaces
         //Token Management
         IGenericRepository<RefreshToken> RefreshTokens { get; }
 
+
+        Task<IDbContextTransaction> BeginTransactionAsync();
 
         Task<int> SaveAsync();
         IDbContextTransaction BeginTransaction();

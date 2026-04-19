@@ -209,5 +209,101 @@ namespace CareBox.API.Controllers
         }
         #endregion
 
+
+
+        
+
+
+
+        #region Client Product Search
+        [HttpPost("SearchProducts")]
+        [Authorize(Roles = "CLIENT")]
+        public async Task<IActionResult> SearchProducts(
+            [FromQuery] double lat,
+            [FromQuery] double lon,
+            [FromBody] ProductSearchRequestDto request)
+        {
+            try
+            {
+                var clientId = GetCurrentUserId();
+
+                // تمرير الـ lat والـ lon للـ Service
+                var results = await _productManagementService.SearchProductsForClientAsync(clientId, request, lat, lon);
+
+                if (!results.Any())
+                {
+                    return Ok(new
+                    {
+                        message = "No products matching your search criteria were found.",
+                        data = results // هترجع [] عشان الموبايل ميضربش إيرور لو متوقع مصفوفة
+                    });
+                }
+
+                return Ok(new { success = true, data = results });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+        #endregion
+
+        #region Get Category Filter Options
+        [HttpGet("CategoryFilterOptions/{categoryId}")]
+        [Authorize(Roles = "CLIENT")]
+        public async Task<IActionResult> GetCategoryFilterOptions(int categoryId)
+        {
+            try
+            {
+                var data = await _productManagementService.GetCategoryFilterOptionsAsync(categoryId);
+
+                // إرجاع الـ DTO مباشرة للحصول على شكل الـ JSON المطلوب
+                return Ok(new { success = true, data = data });
+            }
+            catch (Exception ex)
+            {
+                // في حالة الخطأ فقط نرجع شكل مختلف يوضح المشكلة
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+        #endregion
+
+        #region Get Product Positions By Name
+        [HttpGet("positions-by-name")]
+        [AllowAnonymous] // أو [Authorize(Roles = "CLIENT")] حسب رغبتك
+        public async Task<IActionResult> GetPositionsByName([FromQuery] string productName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(productName))
+                    return BadRequest(new { message = "No Product name" });
+
+                var data = await _productManagementService.GetProductPositionsByNameAsync(productName);
+
+                // إرجاع الـ DTO مباشرة ليظهر الـ JSON بالشكل المسطح المطلوب
+                return Ok(new { success = true, data = data });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+        #endregion
+
+        #region GetCategories
+        [HttpGet("Categories")]
+        [Authorize(Roles = "CLIENT")]
+        public async Task<IActionResult> GetForClientCategories()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var data = await _productManagementService.GetClientCategoriesAsync(userId);
+                return Ok(new { success = true, data = data });
+            }
+            catch (Exception ex) { return BadRequest(new { success = false, message = ex.Message }); }
+        }
+        #endregion
+
     }
 }

@@ -6,6 +6,8 @@ using CareBox.BLL.Services.AuthServices.Interfaces;
 using CareBox.BLL.Services.AuthServices.Settings;
 using CareBox.BLL.Services.BookingManagementService;
 using CareBox.BLL.Services.BookingManagementService.Interfaces;
+using CareBox.BLL.Services.CartServices;
+using CareBox.BLL.Services.CartServices.Interface;
 using CareBox.BLL.Services.ClientServices;
 using CareBox.BLL.Services.ClientServices.Interfaces;
 using CareBox.BLL.Services.DashboardServices;
@@ -17,6 +19,8 @@ using CareBox.BLL.Services.FileServices;
 using CareBox.BLL.Services.FileServices.Interfaces;
 using CareBox.BLL.Services.InvoiceManagementService;
 using CareBox.BLL.Services.InvoiceManagementService.Interfaces;
+using CareBox.BLL.Services.OrderService;
+using CareBox.BLL.Services.OrderService.Interfaces;
 using CareBox.BLL.Services.ProductManagementService;
 using CareBox.BLL.Services.ProductManagementService.Interfaces;
 using CareBox.BLL.Services.ProviderServices;
@@ -77,7 +81,9 @@ namespace CareBox.API
             builder.Services.AddScoped<IInvoiceManagementService, InvoiceManagementService>();
             builder.Services.AddScoped<IDashboardService, DashboardService>();
             builder.Services.AddScoped<IProductManagementService, ProductManagementService>();
-
+            builder.Services.AddScoped<ICartService, CartService>();
+            builder.Services.AddScoped<IOrderService, OrderService>();
+            
 
 
             #endregion

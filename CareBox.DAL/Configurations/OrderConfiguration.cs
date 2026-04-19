@@ -33,6 +33,11 @@ namespace CareBox.DAL.Configurations
                    .HasColumnType(DBTypes.Decimal18_2)
                    .IsRequired();
 
+            // تحديد خصائص النصوص للتوصيل
+            builder.Property(o => o.DeliveryAddress).HasMaxLength(500);
+            builder.Property(o => o.PhoneNumber).HasMaxLength(20);
+            builder.Property(o => o.DeliveryNotes).HasMaxLength(1000);
+
             //Relationship Client
             builder.HasOne(o => o.Client)
                    .WithMany(c => c.Orders)
@@ -44,6 +49,11 @@ namespace CareBox.DAL.Configurations
            .WithMany(p => p.Orders) // اللي ضفناها في الموديل فوق
            .HasForeignKey(o => o.ServiceProviderId)
            .OnDelete(DeleteBehavior.NoAction);
+
+            builder.HasOne(o => o.Vehicle)
+                   .WithMany(v=>v.Orders)
+                   .HasForeignKey(o => o.VehicleId)
+                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

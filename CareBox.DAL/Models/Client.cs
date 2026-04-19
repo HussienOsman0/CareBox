@@ -17,6 +17,7 @@ namespace CareBox.DAL.Models
         public string? ClientImageUrl { get; set; }
         public string? Address { get; set; }
         public virtual AppUser AppUser { get; set; }
+        public virtual Cart Cart { get; set; }
         public virtual ICollection<Vehicle> Vehicles { get; set; } 
         public virtual ICollection<Booking> Bookings { get; set; }
         public virtual ICollection<Listing> Listings { get; set; }

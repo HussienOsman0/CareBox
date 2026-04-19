@@ -37,7 +37,8 @@ namespace CareBox.DAL.Models
         public HorizontalPosition? HorizontalPosition { get; set; } // Front / Rear
         public VerticalPosition? VerticalPosition { get; set; }     // Right / Left
 
-
+        // المنتج ممكن يكون موجود في كذا سلة
+        public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
         public virtual ICollection<OrderDetail> OrderDetails { get; set; }
     }
 }

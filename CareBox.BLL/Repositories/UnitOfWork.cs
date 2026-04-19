@@ -42,8 +42,11 @@ namespace CareBox.BLL.Repositories
             Bookings = new GenericRepository<Booking>(_context);
             Invoices = new GenericRepository<Invoice>(_context);
             InvoiceDetails = new GenericRepository<InvoiceDetail>(_context);
+
             Orders = new GenericRepository<Order>(_context);
             OrderDetails = new GenericRepository<OrderDetail>(_context);
+            Carts = new GenericRepository<Cart>(_context);
+            CartItems = new GenericRepository<CartItem>(_context);
 
             // Emergency & Reviews
             EmergencyRequests = new GenericRepository<EmergencyRequest>(_context);
@@ -77,8 +80,11 @@ namespace CareBox.BLL.Repositories
         public IGenericRepository<Booking> Bookings { get; }
         public IGenericRepository<Invoice> Invoices { get; }
         public IGenericRepository<InvoiceDetail> InvoiceDetails { get; }
+
         public IGenericRepository<Order> Orders { get; }
         public IGenericRepository<OrderDetail> OrderDetails { get; }
+        public IGenericRepository<Cart> Carts { get; private set; }
+        public IGenericRepository<CartItem> CartItems { get; private set; }
 
         public IGenericRepository<EmergencyRequest> EmergencyRequests { get; }
         public IGenericRepository<Review> Reviews { get; }
@@ -88,6 +94,12 @@ namespace CareBox.BLL.Repositories
         public IGenericRepository<SavedListing> SavedListings { get; }
 
         public IGenericRepository<RefreshToken> RefreshTokens { get; }
+
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
+        }
 
         public async Task<int> SaveAsync()
         {

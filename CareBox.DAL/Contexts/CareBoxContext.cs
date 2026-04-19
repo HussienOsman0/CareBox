@@ -24,6 +24,8 @@ namespace CareBox.DAL.Contexts
         #region Client & Vehicles Module
         public DbSet<Client> Clients { get; set; }
         public DbSet<Vehicle> Vehicles { get; set; }
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
         #endregion
 
         #region Service Providers Module

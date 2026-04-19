@@ -4,6 +4,7 @@ using CareBox.DAL.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 
@@ -12,9 +13,11 @@ using NetTopologySuite.Geometries;
 namespace CareBox.DAL.Migrations
 {
     [DbContext(typeof(CareBoxContext))]
-    partial class CareBoxContextModelSnapshot : ModelSnapshot
+    [Migration("20260418173920_AddShoppingCart")]
+    partial class AddShoppingCart
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -446,25 +449,10 @@ namespace CareBox.DAL.Migrations
                     b.Property<int>("ClientId")
                         .HasColumnType("int");
 
-                    b.Property<string>("DeliveryAddress")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("DeliveryNotes")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<int>("DeliveryType")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("OrderDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
 
                     b.Property<int>("ServiceProviderId")
                         .HasColumnType("int");
@@ -475,16 +463,11 @@ namespace CareBox.DAL.Migrations
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int?>("VehicleId")
-                        .HasColumnType("int");
-
                     b.HasKey("OrderId");
 
                     b.HasIndex("ClientId");
 
                     b.HasIndex("ServiceProviderId");
-
-                    b.HasIndex("VehicleId");
 
                     b.ToTable("Orders");
                 });
@@ -1130,7 +1113,7 @@ namespace CareBox.DAL.Migrations
                     b.HasOne("CareBox.DAL.Models.Product", "Product")
                         .WithMany("CartItems")
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Cart");
@@ -1262,16 +1245,9 @@ namespace CareBox.DAL.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.HasOne("CareBox.DAL.Models.Vehicle", "Vehicle")
-                        .WithMany("Orders")
-                        .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.Navigation("Client");
 
                     b.Navigation("ServiceProvider");
-
-                    b.Navigation("Vehicle");
                 });
 
             modelBuilder.Entity("CareBox.DAL.Models.OrderDetail", b =>
@@ -1613,8 +1589,6 @@ namespace CareBox.DAL.Migrations
             modelBuilder.Entity("CareBox.DAL.Models.Vehicle", b =>
                 {
                     b.Navigation("Bookings");
-
-                    b.Navigation("Orders");
                 });
 #pragma warning restore 612, 618
         }
