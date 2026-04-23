@@ -79,26 +79,79 @@ namespace CareBox.BLL.Services.InvoiceManagementService
 
 
         #region Get Client Invoices
+        #region old logic
+        //public async Task<IEnumerable<ClientInvoiceResponseDto>> GetClientInvoicesAsync(int userId)
+        //{
+        //    // جلب كائن العميل أولاً
+        //    var client = await _unitOfWork.Clients.FindAsync(c => c.AppUserId == userId);
+        //    if (client == null) throw new Exception("Client not found.");
+
+        //    // جلب الفواتير مع تفاصيل الخدمة ونوع مقدم الخدمة
+        //    var invoices = await _unitOfWork.Invoices.FindAllAsync(
+        //    i => i.Booking.ClientId == client.ClientID && i.IsDraft == false,
+        //    new[] { "InvoiceDetails", "Booking.ServiceProvider.ProviderType" }
+        //    );
+
+        //    // المابينج اليدوي (Manual Mapping)
+        //    return invoices.OrderByDescending(i => i.IssueDate).Select(i => new ClientInvoiceResponseDto
+        //    {
+        //        InvoiceId = i.InvoiceId,
+        //        IssueDate = i.IssueDate,
+        //        TotalAmount = i.TotalAmount,
+        //        ProviderName = i.Booking?.ServiceProvider?.Name ?? "N/A",
+        //        ProviderType = i.Booking?.ServiceProvider?.ProviderType?.TypeName ?? "N/A",
+        //        Items = i.InvoiceDetails.Select(d => new InvoiceItemDto
+        //        {
+        //            ItemDescription = d.ItemDescription,
+        //            Price = d.Price
+        //        }).ToList()
+        //    });
+        //} 
+        #endregion
+
+
         public async Task<IEnumerable<ClientInvoiceResponseDto>> GetClientInvoicesAsync(int userId)
         {
-            // جلب كائن العميل أولاً
+            // 1. جلب كائن العميل أولاً
             var client = await _unitOfWork.Clients.FindAsync(c => c.AppUserId == userId);
             if (client == null) throw new Exception("Client not found.");
 
-            // جلب الفواتير مع تفاصيل الخدمة ونوع مقدم الخدمة
+            // 2. جلب الفواتير المرتبطة بالعميل من (الحجوزات، الطلبات، الطلبات الطارئة)
             var invoices = await _unitOfWork.Invoices.FindAllAsync(
-            i => i.Booking.ClientId == client.ClientID && i.IsDraft == false,
-            new[] { "InvoiceDetails", "Booking.ServiceProvider.ProviderType" }
+                i => i.IsDraft == false &&
+                     (
+                         (i.Booking != null && i.Booking.ClientId == client.ClientID) ||
+                         (i.Order != null && i.Order.ClientId == client.ClientID) ||
+                         (i.EmergencyRequest != null && i.EmergencyRequest.ClientId == client.ClientID)
+                     ),
+                new[]
+                {
+                "InvoiceDetails",
+                "Booking.ServiceProvider.ProviderType",
+                "Order.ServiceProvider.ProviderType",
+                "EmergencyRequest.ServiceProvider.ProviderType"
+                }
             );
 
-            // المابينج اليدوي (Manual Mapping)
+            // 3. المابينج اليدوي الديناميكي (Manual Mapping)
             return invoices.OrderByDescending(i => i.IssueDate).Select(i => new ClientInvoiceResponseDto
             {
                 InvoiceId = i.InvoiceId,
                 IssueDate = i.IssueDate,
                 TotalAmount = i.TotalAmount,
-                ProviderName = i.Booking?.ServiceProvider?.Name ?? "N/A",
-                ProviderType = i.Booking?.ServiceProvider?.ProviderType?.TypeName ?? "N/A",
+
+                // 👇 البحث عن اسم المورد في المصادر الثلاثة بالترتيب
+                ProviderName = i.Booking?.ServiceProvider?.Name
+                            ?? i.Order?.ServiceProvider?.Name
+                            ?? i.EmergencyRequest?.ServiceProvider?.Name
+                            ?? "N/A",
+
+                // 👇 البحث عن نوع المورد في المصادر الثلاثة
+                ProviderType = i.Booking?.ServiceProvider?.ProviderType?.TypeName
+                            ?? i.Order?.ServiceProvider?.ProviderType?.TypeName
+                            ?? i.EmergencyRequest?.ServiceProvider?.ProviderType?.TypeName
+                            ?? "N/A",
+
                 Items = i.InvoiceDetails.Select(d => new InvoiceItemDto
                 {
                     ItemDescription = d.ItemDescription,

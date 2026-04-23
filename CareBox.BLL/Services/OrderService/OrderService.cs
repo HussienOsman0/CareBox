@@ -345,6 +345,7 @@ namespace CareBox.BLL.Services.OrderService
             if (isProvider && order.Status == DAL.Enums.OrderStatus.Pending && model.NewStatus == DAL.Enums.OrderStatus.Completed)
                 throw new Exception("Cannot complete a pending order directly. It must be accepted and processed first.");
 
+
             // 🛡️ بدء الـ Transaction لضمان الحفظ المزدوج (الطلب + الفاتورة) بأمان
             using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
@@ -352,9 +353,28 @@ namespace CareBox.BLL.Services.OrderService
                 // 4. تحديث حالة الطلب
                 order.Status = model.NewStatus;
                 _unitOfWork.Orders.Update(order);
+                // ----------------------------------------------------
+                //  منطق إلغاء الطلب (إرجاع المنتجات للمخزن) 🔄
+                // ----------------------------------------------------
+                if (model.NewStatus == DAL.Enums.OrderStatus.Cancelled)
+                {
+                    foreach (var detail in order.OrderDetails)
+                    {
+                        var product = detail.Product;
+
+                        // إضافة الكمية الملغاة مرة أخرى للمخزن
+                        product.StockQuantity += detail.Quantity;
+
+                        // تحديث حالة المخزن بناءً على الكمية الجديدة (عشان لو كان OutOfStock يرجع InStock)
+                        product.StockStatus = product.StockQuantity == 0 ? DAL.Enums.StockStatus.OutOfStock :
+                                             (product.StockQuantity <= 20 ? DAL.Enums.StockStatus.LowStock : DAL.Enums.StockStatus.InStock);
+
+                        _unitOfWork.Products.Update(product);
+                    }
+                }
 
                 // ----------------------------------------------------
-                // 5. منطق الفواتير (Invoice Logic) - بناءً على طلبك
+                //  منطق الفواتير (Invoice Logic) - بناءً على طلبك
                 // ----------------------------------------------------
 
                 // إنشاء الفاتورة النهائية مباشرة وفقط عند اكتمال الطلب (Completed)
@@ -404,6 +424,7 @@ namespace CareBox.BLL.Services.OrderService
                 throw new Exception($"Failed to update status: {ex.Message}");
             }
         }
+
 
         #endregion
     }

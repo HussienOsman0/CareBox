@@ -174,12 +174,12 @@ namespace CareBox.BLL.Services.CartServices
             {
                 return new CartResponseDto();
             }
-
+            
             // 2. تحويل العناصر لـ DTO وحساب إجمالي كل منتج
             var items = client.Cart.CartItems.Select(ci => new CartItemResponseDto
             {
                 ProductId = ci.ProductId,
-                Name = ci.Product.Name,
+                Name = $"{ci.Product.Name} {(ci.Product.VerticalPosition.HasValue ? ci.Product.VerticalPosition.ToString() : "")} {(ci.Product.HorizontalPosition.HasValue ? ci.Product.HorizontalPosition.ToString() : "")}".TrimEnd(),
                 ImageUrl = ci.Product.ProductImageUrl?? "No Image",
                 Price = ci.Product.Price,
                 StoreName = ci.Product.ServiceProvider.Name,
