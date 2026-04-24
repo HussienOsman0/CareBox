@@ -15,22 +15,29 @@ namespace CareBox.DAL.Models
         public int ClientId { get; set; } 
         public virtual Client Client { get; set; }
 
+
         public int VehicleId { get; set; } 
         public virtual Vehicle Vehicle { get; set; }
+
 
         public EmergencyRequestType RequestType { get; set; } //
 
 
         public virtual Invoice? Invoice { get; set; }
+        
+
 
 
         // GEOGRAPHY (Point)
         public Point RequestLocation { get; set; }
+        public string? ManualAddress { get; set; }
+        public double? EstimatedDistance { get; set; }
+        public int? EstimatedTimeInMinutes { get; set; }
 
         public RequestStatus Status { get; set; } //
 
-        public int ServiceProviderId { get; set; } // 
-        public virtual ServiceProvider ServiceProvider { get; set; }
+        public int? ServiceProviderId { get; set; } // 
+        public virtual ServiceProvider? ServiceProvider { get; set; }
 
         public int? AssignedTechnicianId { get; set; } // 
         public virtual Technician? AssignedTechnician { get; set; }

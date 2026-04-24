@@ -27,6 +27,15 @@ namespace CareBox.DAL.Configurations
                    .HasColumnType("geography")
                    .IsRequired();
 
+            // <--- جديد: إعداد العنوان اليدوي
+            builder.Property(er => er.ManualAddress)
+                   .HasMaxLength(500)
+                   .IsRequired(false); // ممكن نخليه إجباري حسب الـ Business بتاعك
+
+            // <--- جديد: إعداد المسافة والوقت
+            builder.Property(er => er.EstimatedDistance).IsRequired(false);
+            builder.Property(er => er.EstimatedTimeInMinutes).IsRequired(false);
+
             //Status (TinyInt)
             builder.Property(er => er.Status)
                    .HasColumnType("tinyint")
@@ -40,18 +49,19 @@ namespace CareBox.DAL.Configurations
 
             // Relationships
             builder.HasOne(er => er.Client)
-                   .WithMany()
+                   .WithMany(c=>c.EmergencyRequests)
                    .HasForeignKey(er => er.ClientId)
                    .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(er => er.Vehicle)
-                   .WithMany()
+                   .WithMany(v=>v.EmergencyRequests)
                    .HasForeignKey(er => er.VehicleId)
-                   .OnDelete(DeleteBehavior.Restrict);
+                   .OnDelete(DeleteBehavior.NoAction);
 
             builder.HasOne(er => er.ServiceProvider)
                    .WithMany(p => p.EmergencyRequests)
                    .HasForeignKey(er => er.ServiceProviderId)
+                   .IsRequired(false) // <--- جديد
                    .OnDelete(DeleteBehavior.NoAction);
 
             builder.HasOne(er => er.AssignedTechnician)

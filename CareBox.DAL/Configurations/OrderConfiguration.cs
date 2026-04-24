@@ -59,7 +59,7 @@ namespace CareBox.DAL.Configurations
             builder.HasOne(o => o.Vehicle)
                    .WithMany(v=>v.Orders)
                    .HasForeignKey(o => o.VehicleId)
-                   .OnDelete(DeleteBehavior.Restrict);
+                   .OnDelete(DeleteBehavior.NoAction);
         }
     }
 }

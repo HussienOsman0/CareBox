@@ -18,8 +18,9 @@ namespace CareBox.DAL.Models
         public string? Address { get; set; }
         public virtual AppUser AppUser { get; set; }
         public virtual Cart Cart { get; set; }
-        public virtual ICollection<Vehicle> Vehicles { get; set; } 
+        public virtual ICollection<Vehicle> Vehicles { get; set; }
         public virtual ICollection<Booking> Bookings { get; set; }
+        public virtual ICollection<EmergencyRequest> EmergencyRequests { get; set; }
         public virtual ICollection<Listing> Listings { get; set; }
         public virtual ICollection<Order> Orders { get; set; }
         public virtual ICollection<SavedListing> SavedListings { get; set; }

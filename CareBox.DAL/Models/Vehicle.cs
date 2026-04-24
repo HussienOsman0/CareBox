@@ -27,5 +27,6 @@ namespace CareBox.DAL.Models
 
         public virtual ICollection<Order> Orders { get; set; }
         public virtual ICollection<Booking> Bookings { get; set; }
+        public virtual ICollection<EmergencyRequest> EmergencyRequests { get; set; }
     }
 }

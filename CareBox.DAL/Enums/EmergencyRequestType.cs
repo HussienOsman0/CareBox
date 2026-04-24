@@ -8,6 +8,10 @@ namespace CareBox.DAL.Enums
 {
     public enum EmergencyRequestType : byte
     {
-        Towing = 1, Fuel = 2, BatteryJump = 3, FlatTire = 4
+        Maintenance = 1, // صيانة عامة
+        Battery = 2, // بطارية نايمة
+        FlatTire = 3,    // كاوتش مهوي/مخروم
+        Accident = 4,    // حادثة / محتاج ونش
+        FuelShortage = 5     // البنزين خلص
     }
 }

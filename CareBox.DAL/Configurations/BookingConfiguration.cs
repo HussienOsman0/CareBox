@@ -51,7 +51,7 @@ namespace CareBox.DAL.Configurations
             builder.HasOne(b => b.Vehicle)
                    .WithMany(v => v.Bookings)
                    .HasForeignKey(b => b.VehicleId)
-                   .OnDelete(DeleteBehavior.Restrict);
+                   .OnDelete(DeleteBehavior.NoAction);
 
             // Relationship ServiceProvider
             builder.HasOne(b => b.ServiceProvider)
