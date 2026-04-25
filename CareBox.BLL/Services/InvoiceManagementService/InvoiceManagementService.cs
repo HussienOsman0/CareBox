@@ -224,7 +224,44 @@ namespace CareBox.BLL.Services.InvoiceManagementService
                 InvoiceId = invoice.InvoiceId,
                 IssueDate = invoice.IssueDate,
                 TotalAmount = invoice.TotalAmount,
-                
+
+                ProviderName = invoice.Booking?.ServiceProvider?.Name ?? "N/A",
+                ProviderType = invoice.Booking?.ServiceProvider?.ProviderType?.TypeName ?? "N/A",
+                Items = invoice.InvoiceDetails.Select(d => new InvoiceItemDto
+                {
+                    ItemDescription = d.ItemDescription,
+                    Price = d.Price
+                }).ToList()
+            };
+        }
+
+        // 2. عرض تفاصيل الفاتورة لمقدم الخدمة برقم الحجز
+
+        #endregion
+
+        #region GetClientInvoiceByEmergencyRequestIdAsync
+        // 1. عرض تفاصيل الفاتورة للعميل برقم الحجز
+        public async Task<ClientInvoiceResponseDto> GetClientInvoiceByEmergencyRequestIdAsync(int userId, long EmergencyRequestId)
+        {
+            var client = await _unitOfWork.Clients.FindAsync(c => c.AppUserId == userId);
+            if (client == null) throw new Exception("Client not found.");
+
+            // العميل لا يرى الفاتورة إلا إذا كانت مغلقة (IsDraft == false)
+            var query = await _unitOfWork.Invoices.FindAllAsync(
+                i => i.EmergencyRequestId == EmergencyRequestId && i.EmergencyRequest.ClientId == client.ClientID && i.IsDraft == false,
+                new[] { "InvoiceDetails", "EmergencyRequest.ServiceProvider.ProviderType" }
+            );
+
+            var invoice = query.FirstOrDefault();
+            if (invoice == null)
+                throw new Exception("Invoice not found or it is still a draft.");
+
+            return new ClientInvoiceResponseDto
+            {
+                InvoiceId = invoice.InvoiceId,
+                IssueDate = invoice.IssueDate,
+                TotalAmount = invoice.TotalAmount,
+
                 ProviderName = invoice.Booking?.ServiceProvider?.Name ?? "N/A",
                 ProviderType = invoice.Booking?.ServiceProvider?.ProviderType?.TypeName ?? "N/A",
                 Items = invoice.InvoiceDetails.Select(d => new InvoiceItemDto
@@ -277,8 +314,9 @@ namespace CareBox.BLL.Services.InvoiceManagementService
                     Price = d.Price
                 }).ToList()
             };
-        } 
+        }
         #endregion
+
 
 
 
@@ -311,7 +349,110 @@ namespace CareBox.BLL.Services.InvoiceManagementService
                     Price = d.Price
                 }).ToList()
             };
-        } 
+        }
+        #endregion
+
+        #region GetProviderInvoice EmergencyRequestId
+        public async Task<ProviderInvoiceResponseDto> GetProviderInvoiceByEmergencyRequestIdAsync(int userId, long EmergencyRequestId)
+        {
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == userId);
+            if (provider == null) throw new Exception("Provider not found.");
+
+            // مقدم الخدمة يرى الفاتورة سواء كانت مسودة أو نهائية (لم نضع شرط IsDraft)
+            var query = await _unitOfWork.Invoices.FindAllAsync(
+                i => i.EmergencyRequestId == EmergencyRequestId && i.EmergencyRequest.ServiceProviderId == provider.ServiceProviderId,
+                new[] { "InvoiceDetails", "EmergencyRequest.Client" }
+            );
+
+            var invoice = query.FirstOrDefault();
+            if (invoice == null)
+                throw new Exception("Invoice not found for this  EmergencyRequest.");
+
+            return new ProviderInvoiceResponseDto
+            {
+                InvoiceId = invoice.InvoiceId,
+                IssueDate = invoice.IssueDate,
+                TotalAmount = invoice.TotalAmount,
+                IsDraft = invoice.IsDraft,
+                ClientName = invoice.Booking?.Client?.FullName ?? "N/A",
+                Items = invoice.InvoiceDetails.Select(d => new InvoiceItemDto
+                {
+                    ItemId= d.InvoiceDetailId,
+                    ItemDescription = d.ItemDescription,
+                    Price = d.Price
+                }).ToList()
+            };
+        }
+        #endregion
+
+
+
+
+
+
+
+        #region Item Edit
+
+        // 1. تعديل سعر بند معين
+        public async Task<bool> UpdateInvoiceItemPriceAsync(int providerUserId, long invoiceDetailId, decimal newPrice)
+        {
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == providerUserId);
+            if (provider == null) throw new Exception("Provider not found.");
+
+            var query = await _unitOfWork.InvoiceDetails.FindAllAsync(
+                    d => d.InvoiceDetailId == invoiceDetailId && (
+                        (d.Invoice.Booking != null && d.Invoice.Booking.ServiceProviderId == provider.ServiceProviderId) ||
+                        (d.Invoice.Order != null && d.Invoice.Order.ServiceProviderId == provider.ServiceProviderId) ||
+                        (d.Invoice.EmergencyRequest != null && d.Invoice.EmergencyRequest.ServiceProviderId == provider.ServiceProviderId)
+                    )
+                );
+            var detail = query.FirstOrDefault();
+
+            if (detail == null) throw new Exception("Invoice item not find.");
+
+            // التحقق من أن الفاتورة ما زالت مسودة
+            if (!detail.Invoice.IsDraft)
+                throw new Exception("Cannot edit price. The invoice is final.");
+
+
+            // تحديث الإجمالي للفاتورة (خصم السعر القديم وإضافة الجديد)
+            detail.Invoice.TotalAmount = (detail.Invoice.TotalAmount - detail.Price) + newPrice;
+
+            // تحديث سعر البند
+            detail.Price = newPrice;
+
+            await _unitOfWork.SaveAsync();
+            return true;
+        }
+
+        // 2. مسح بند معين من الفاتورة
+        public async Task<bool> RemoveInvoiceItemAsync(int providerUserId, long invoiceDetailId)
+        {
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == providerUserId);
+            if (provider == null) throw new Exception("Provider not found.");
+
+            var query = await _unitOfWork.InvoiceDetails.FindAllAsync(
+                    d => d.InvoiceDetailId == invoiceDetailId && (
+                            (d.Invoice.Booking != null && d.Invoice.Booking.ServiceProviderId == provider.ServiceProviderId) ||
+                            (d.Invoice.Order != null && d.Invoice.Order.ServiceProviderId == provider.ServiceProviderId) ||
+                            (d.Invoice.EmergencyRequest != null && d.Invoice.EmergencyRequest.ServiceProviderId == provider.ServiceProviderId)
+                        )
+                );
+            var detail = query.FirstOrDefault();
+
+            if (detail == null) throw new Exception("Invoice item not find.");
+
+            if (!detail.Invoice.IsDraft)
+                throw new Exception("Cannot delete items from a final invoice.");
+
+            // خصم السعر من إجمالي الفاتورة قبل الحذف
+            detail.Invoice.TotalAmount -= detail.Price;
+
+            _unitOfWork.InvoiceDetails.Delete(detail); // تأكد من وجود دالة Delete في الـ Repository
+            await _unitOfWork.SaveAsync();
+            return true;
+        }
+
         #endregion
     }
 

@@ -15,6 +15,8 @@ using CareBox.BLL.Services.DashboardServices.Interfaces;
 using CareBox.BLL.Services.EmailServices;
 using CareBox.BLL.Services.EmailServices.Interfaces;
 using CareBox.BLL.Services.EmailServices.Settings;
+using CareBox.BLL.Services.EmergencyService;
+using CareBox.BLL.Services.EmergencyService.Interface;
 using CareBox.BLL.Services.FileServices;
 using CareBox.BLL.Services.FileServices.Interfaces;
 using CareBox.BLL.Services.InvoiceManagementService;
@@ -83,8 +85,8 @@ namespace CareBox.API
             builder.Services.AddScoped<IProductManagementService, ProductManagementService>();
             builder.Services.AddScoped<ICartService, CartService>();
             builder.Services.AddScoped<IOrderService, OrderService>();
-            
-
+            builder.Services.AddScoped<ITechnicianService, TechnicianService>();
+            builder.Services.AddScoped<IEmergencyRequestService, EmergencyRequestService>();
 
             #endregion
 
@@ -188,6 +190,7 @@ namespace CareBox.API
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
 
             var app = builder.Build();
 

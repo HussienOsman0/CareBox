@@ -33,7 +33,12 @@ namespace CareBox.BLL.Services.ReviewServices
                 b.ServiceProviderId == model.ServiceProviderId &&
                 b.Status == BookingStatus.Completed);
 
-            if (!hasCompletedBooking)
+            var hasCompletedEmergency = await _unitOfWork.EmergencyRequests.IsExistAsync(e =>
+                e.ClientId == client.ClientID &&
+                e.ServiceProviderId == model.ServiceProviderId &&
+                e.Status == RequestStatus.Completed);
+
+            if (!hasCompletedBooking||!hasCompletedEmergency)
                 throw new Exception("You can only review this provider after completing at least one service with them.");
 
 

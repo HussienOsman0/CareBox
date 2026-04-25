@@ -16,10 +16,18 @@ namespace CareBox.BLL.Services.InvoiceManagementService.Interfaces
         Task<IEnumerable<ProviderInvoiceResponseDto>> GetProviderInvoicesAsync(int userId);
 
 
+
         Task<ClientInvoiceResponseDto> GetClientInvoiceByBookingIdAsync(int userId, long bookingId);
+        Task<ClientInvoiceResponseDto> GetClientInvoiceByEmergencyRequestIdAsync(int userId, long EmergencyRequestId);
         Task<ClientInvoiceResponseDto> GetClientInvoiceByOrderIdAsync(int userId, int orderId);
 
+
+        Task<ProviderInvoiceResponseDto> GetProviderInvoiceByEmergencyRequestIdAsync(int userId, long EmergencyRequestId);
         Task<ProviderInvoiceResponseDto> GetProviderInvoiceByBookingIdAsync(int userId, long bookingId);
+
+
+        Task<bool> UpdateInvoiceItemPriceAsync(int providerUserId, long invoiceDetailId, decimal newPrice);
+        Task<bool> RemoveInvoiceItemAsync(int providerUserId, long invoiceDetailId);
     }
 }
 

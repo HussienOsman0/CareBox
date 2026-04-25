@@ -98,8 +98,8 @@ namespace CareBox.API.Controllers
                         data = clientInvoices
                     });
                 }
-            } 
-           
+            }
+
             catch (Exception ex)
             {
                 return BadRequest(new
@@ -148,6 +148,41 @@ namespace CareBox.API.Controllers
 
 
 
+        #region GetInvoiceByEmergencyRequestId
+        [HttpGet("GetInvoiceByEmergencyRequestId/{EmergencyRequestId}")]
+        [Authorize(Roles = "CLIENT")] // الدالة دي متاحة لأي مستخدم مسجل دخوله (عميل أو مقدم خدمة)
+        public async Task<IActionResult> GetInvoiceByEmergencyRequestId(long EmergencyRequestId)
+        {
+            try
+            {
+                // استخدام الدالة اللي عملناها قبل كده لاستخراج الـ ID
+                var userId = GetCurrentUserId();
+
+                // التحقق من نوع المستخدم بناءً على الـ Role
+                if (User.IsInRole("SERVICEPROVIDER"))
+                {
+                    var invoice = await _invoiceManagementService.GetProviderInvoiceByEmergencyRequestIdAsync(userId, EmergencyRequestId);
+                    return Ok(new { Success = true, Data = invoice });
+                }
+                else
+                {
+                    // لو مكنش Provider، يبقى Client
+                    var invoice = await _invoiceManagementService.GetClientInvoiceByEmergencyRequestIdAsync(userId, EmergencyRequestId);
+                    return Ok(new { Success = true, Data = invoice });
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = ex.Message
+                });
+            }
+        }
+        #endregion
+
+
 
         #region GetClientInvoiceByOrderId
         [HttpGet("GetInvoiceByOrderId/{orderId}")]
@@ -169,8 +204,46 @@ namespace CareBox.API.Controllers
             {
                 return BadRequest(new { success = false, message = ex.Message });
             }
+        }
+        #endregion
+
+        #region Edit item
+
+        [HttpPatch("updateprice-item-FromInvoice/{invoiceDetailId}")]
+        [Authorize(Roles = "SERVICEPROVIDER")]
+        public async Task<IActionResult> UpdateItemPrice(long invoiceDetailId, [FromBody] decimal newPrice)
+        {
+            try
+            {
+                var providerUserId = GetCurrentUserId();
+                var result = await _invoiceManagementService.UpdateInvoiceItemPriceAsync(providerUserId, invoiceDetailId, newPrice);
+
+                return Ok(new { Success = true, Message = "Price updated successfully." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+        }
+
+        [HttpDelete("Delete-item-FromInvoice/{invoiceDetailId}")]
+        [Authorize(Roles = "SERVICEPROVIDER")]
+        public async Task<IActionResult> RemoveItem(long invoiceDetailId)
+        {
+            try
+            {
+                var providerUserId = GetCurrentUserId();
+                await _invoiceManagementService.RemoveInvoiceItemAsync(providerUserId, invoiceDetailId);
+
+                return Ok(new { Success = true, Message = "Item removed successfully." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
         } 
         #endregion
+
 
     }
 }

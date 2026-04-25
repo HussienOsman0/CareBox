@@ -43,5 +43,6 @@ namespace CareBox.DAL.Models
         public virtual Technician? AssignedTechnician { get; set; }
 
         public DateTime CreatedAt { get; set; }
+
     }
 }

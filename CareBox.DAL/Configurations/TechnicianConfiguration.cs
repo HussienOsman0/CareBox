@@ -22,6 +22,8 @@ namespace CareBox.DAL.Configurations
                    .HasMaxLength(100)
                    .IsRequired();
 
+            builder.Property(t=> t.PhoneNumber).HasMaxLength(20).IsRequired(); ;
+
             //IsAvailable
             builder.Property(t => t.IsAvailable)
                    .HasColumnType(DBTypes.Bit)
