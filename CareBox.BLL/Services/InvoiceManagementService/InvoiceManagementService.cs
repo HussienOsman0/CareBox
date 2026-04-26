@@ -262,10 +262,12 @@ namespace CareBox.BLL.Services.InvoiceManagementService
                 IssueDate = invoice.IssueDate,
                 TotalAmount = invoice.TotalAmount,
 
-                ProviderName = invoice.Booking?.ServiceProvider?.Name ?? "N/A",
-                ProviderType = invoice.Booking?.ServiceProvider?.ProviderType?.TypeName ?? "N/A",
+               
+                ProviderName = invoice.EmergencyRequest?.ServiceProvider?.Name ?? "N/A",
+                ProviderType = invoice.EmergencyRequest?.ServiceProvider?.ProviderType?.TypeName ?? "N/A",
                 Items = invoice.InvoiceDetails.Select(d => new InvoiceItemDto
                 {
+
                     ItemDescription = d.ItemDescription,
                     Price = d.Price
                 }).ToList()
@@ -399,21 +401,26 @@ namespace CareBox.BLL.Services.InvoiceManagementService
             var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == providerUserId);
             if (provider == null) throw new Exception("Provider not found.");
 
+            // التعديل هنا: إضافة الجداول المرتبطة (Includes) في ثاني باراميتر
             var query = await _unitOfWork.InvoiceDetails.FindAllAsync(
-                    d => d.InvoiceDetailId == invoiceDetailId && (
-                        (d.Invoice.Booking != null && d.Invoice.Booking.ServiceProviderId == provider.ServiceProviderId) ||
-                        (d.Invoice.Order != null && d.Invoice.Order.ServiceProviderId == provider.ServiceProviderId) ||
-                        (d.Invoice.EmergencyRequest != null && d.Invoice.EmergencyRequest.ServiceProviderId == provider.ServiceProviderId)
-                    )
-                );
+                d => d.InvoiceDetailId == invoiceDetailId && (
+                    (d.Invoice.Booking != null && d.Invoice.Booking.ServiceProviderId == provider.ServiceProviderId) ||
+                    (d.Invoice.Order != null && d.Invoice.Order.ServiceProviderId == provider.ServiceProviderId) ||
+                    (d.Invoice.EmergencyRequest != null && d.Invoice.EmergencyRequest.ServiceProviderId == provider.ServiceProviderId)
+                ),
+                new[] { "Invoice", "Invoice.Booking", "Invoice.Order", "Invoice.EmergencyRequest" } // <-- السطر السحري اللي هيحل المشكلة
+            );
+
             var detail = query.FirstOrDefault();
 
-            if (detail == null) throw new Exception("Invoice item not find.");
+            if (detail == null) throw new Exception("Invoice item not found or you are not authorized.");
+
+            // حماية إضافية للتأكد أن الفاتورة تم تحميلها بنجاح
+            if (detail.Invoice == null) throw new Exception("Invoice relation is missing.");
 
             // التحقق من أن الفاتورة ما زالت مسودة
             if (!detail.Invoice.IsDraft)
                 throw new Exception("Cannot edit price. The invoice is final.");
-
 
             // تحديث الإجمالي للفاتورة (خصم السعر القديم وإضافة الجديد)
             detail.Invoice.TotalAmount = (detail.Invoice.TotalAmount - detail.Price) + newPrice;
@@ -424,7 +431,6 @@ namespace CareBox.BLL.Services.InvoiceManagementService
             await _unitOfWork.SaveAsync();
             return true;
         }
-
         // 2. مسح بند معين من الفاتورة
         public async Task<bool> RemoveInvoiceItemAsync(int providerUserId, long invoiceDetailId)
         {
@@ -436,7 +442,8 @@ namespace CareBox.BLL.Services.InvoiceManagementService
                             (d.Invoice.Booking != null && d.Invoice.Booking.ServiceProviderId == provider.ServiceProviderId) ||
                             (d.Invoice.Order != null && d.Invoice.Order.ServiceProviderId == provider.ServiceProviderId) ||
                             (d.Invoice.EmergencyRequest != null && d.Invoice.EmergencyRequest.ServiceProviderId == provider.ServiceProviderId)
-                        )
+                        ),
+                     new[] { "Invoice", "Invoice.Booking", "Invoice.Order", "Invoice.EmergencyRequest" } // <-- السطر السحري اللي هيحل المشكلة
                 );
             var detail = query.FirstOrDefault();
 

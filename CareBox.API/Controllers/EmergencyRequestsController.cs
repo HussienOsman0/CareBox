@@ -95,6 +95,7 @@ namespace CareBox.API.Controllers
 
 
 
+        #region UpdateEmergencyStatus
         [HttpPatch("UpdateEmergencyStatus")]
 
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateEmergencyStatusDto dto)
@@ -113,7 +114,8 @@ namespace CareBox.API.Controllers
             {
                 return BadRequest(new { success = false, message = ex.Message });
             }
-        }
+        } 
+        #endregion
 
 
 
@@ -159,7 +161,7 @@ namespace CareBox.API.Controllers
         }
 
         [HttpPost("Reject/{requestId}")]
-        [Authorize(Roles = "PROVIDER")]
+        [Authorize(Roles = "SERVICEPROVIDER")]
         public async Task<IActionResult> Reject(long requestId)
         {
             // الرفض هنا مجرد "تجاهل" من الورشة، الطلب يفضل Pending للباقي
@@ -168,9 +170,46 @@ namespace CareBox.API.Controllers
 
         #endregion
 
-       
 
+        #region GetProviderRequests
+        [HttpGet("Provider/MyRequests")]
+        [Authorize(Roles = "SERVICEPROVIDER")]
+        public async Task<IActionResult> GetProviderRequests()
+        {
+            try
+            {
+                // استخراج الـ UserId من الـ Token
+                var userId = GetCurrentUserId();
 
+                var result = await _emergencyService.GetProviderEmergencyRequestsAsync(userId);
+
+                return Ok(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        #endregion
+
+        #region MyRegion
+        [HttpGet("DetailsRequests/{requestId}")]
+        [Authorize(Roles = "SERVICEPROVIDER")]
+        public async Task<IActionResult> GetDetails(long requestId)
+        {
+            var userId = GetCurrentUserId();
+            try
+            {
+                var result = await _emergencyService.GetRequestDetailsAsync(requestId, userId);
+                return Ok(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+        #endregion
 
     }
 }

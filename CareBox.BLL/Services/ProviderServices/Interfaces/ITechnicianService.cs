@@ -9,8 +9,11 @@ namespace CareBox.BLL.Services.ProviderServices.Interfaces
 {
     public interface ITechnicianService
     {
+        
         Task<IEnumerable<TechnicianResponseDto>> GetAllMyTechniciansAsync(int userId);
+        Task<IEnumerable<TechnicianResponseDto>> GetMyActiveTechniciansAsync(int userId);
         Task<TechnicianResponseDto?> GetTechnicianByIdAsync(int userId, int technicianId);
+
         Task<bool> AddTechnicianAsync(int userId, CreateTechnicianDto dto);
         Task<bool> UpdateTechnicianAsync(int userId, int technicianId, UpdateTechnicianDto dto);
         Task<bool> DeleteTechnicianAsync(int userId, int technicianId);

@@ -19,5 +19,11 @@ namespace CareBox.BLL.Services.DashboardServices.Interfaces
         // ضيف السطر ده في IUnitOfWork.cs
         Task<ProviderForSparePartsSummaryDto> ProviderForSparePartsSummaryAsync(int userId);
 
+        Task<ProviderEarningsDto> GetProviderEarningsAsync(int userId);
+
+        Task<ProviderEmergencyStatsDto> GetProviderEmergencyStatsAsync(int userId);
+
+        Task<ProviderEmergencyTypeStatsDto> GetProviderEmergencyTypeStatsAsync(int userId);
+
     }
 }

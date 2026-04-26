@@ -150,7 +150,7 @@ namespace CareBox.API.Controllers
 
         #region GetInvoiceByEmergencyRequestId
         [HttpGet("GetInvoiceByEmergencyRequestId/{EmergencyRequestId}")]
-        [Authorize(Roles = "CLIENT")] // الدالة دي متاحة لأي مستخدم مسجل دخوله (عميل أو مقدم خدمة)
+        [Authorize(Roles = "CLIENT")]
         public async Task<IActionResult> GetInvoiceByEmergencyRequestId(long EmergencyRequestId)
         {
             try

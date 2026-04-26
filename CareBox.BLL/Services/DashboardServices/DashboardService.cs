@@ -1,6 +1,7 @@
 ﻿using CareBox.BLL.DTOs.DashboardDto;
 using CareBox.BLL.Repositories.Interfaces;
 using CareBox.BLL.Services.DashboardServices.Interfaces;
+using CareBox.DAL.Enums;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -178,8 +179,119 @@ namespace CareBox.BLL.Services.DashboardServices
                 PendingOrders = pendingOrders,
                 CanceledOrders = canceledOrders
             };
-        } 
+        }
         #endregion
 
+        #region GetProviderEarningsAsync
+        public async Task<ProviderEarningsDto> GetProviderEarningsAsync(int userId)
+        {
+            // 1. جلب مقدم الخدمة
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == userId);
+            if (provider == null) throw new Exception("Provider not found.");
+
+            var providerId = provider.ServiceProviderId;
+
+            // 2. جلب كل الفواتير "النهائية" المرتبطة بهذا الـ Provider من كل المصادر
+            var invoices = await _unitOfWork.Invoices.FindAllAsync(
+                i => i.IsDraft == false &&
+                     (
+                         (i.Booking != null && i.Booking.ServiceProviderId == providerId) ||
+                         (i.Order != null && i.Order.ServiceProviderId == providerId) ||
+                         (i.EmergencyRequest != null && i.EmergencyRequest.ServiceProviderId == providerId)
+                     ),
+                new[] { "Booking", "Order", "EmergencyRequest" }
+            );
+
+            // 3. تحديد التواريخ
+            var today = DateTime.Today;
+            var last7Days = today.AddDays(-7);
+
+            // 4. العمليات الحسابية
+            var daily = invoices.Where(i => i.IssueDate.Date == today)
+                                .Sum(i => i.TotalAmount);
+
+            var weekly = invoices.Where(i => i.IssueDate.Date >= last7Days)
+                                 .Sum(i => i.TotalAmount);
+
+            var monthly = invoices.Where(i => i.IssueDate.Month == today.Month && i.IssueDate.Year == today.Year)
+                                  .Sum(i => i.TotalAmount);
+
+            var total = invoices.Sum(i => i.TotalAmount);
+
+            // 5. إرجاع النتائج
+            return new ProviderEarningsDto
+            {
+                DailyEarnings = daily,
+                WeeklyEarnings = weekly,
+                MonthlyEarnings = monthly,
+                TotalEarnings = total
+            };
+        }
+        #endregion
+
+        #region GetProviderEmergencyStatsAsync
+        public async Task<ProviderEmergencyStatsDto> GetProviderEmergencyStatsAsync(int userId)
+        {
+            // 1. جلب مقدم الخدمة
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == userId);
+            if (provider == null) throw new Exception("Provider not found.");
+
+            var providerId = provider.ServiceProviderId;
+
+            // 2. جلب كل طلبات الطوارئ الخاصة بالورشة دي فقط
+            var requests = await _unitOfWork.EmergencyRequests.FindAllAsync(
+                e => e.ServiceProviderId == providerId
+            );
+
+            // 3. تحديد التواريخ والحالات النشطة
+            var today = DateTime.Today;
+
+            // الحالات التي تعتبر "نشطة" (لم تنتهِ بعد)
+            var activeStatuses = new[]
+            {
+            RequestStatus.Accepted,
+            RequestStatus.OnTheWay,
+            RequestStatus.Arrived,
+            RequestStatus.Arrived
+    };
+
+            // 4. العمليات الحسابية (تتم في الميموري بسرعة جداً)
+            return new ProviderEmergencyStatsDto
+            {
+                TodayRequestsCount = requests.Count(e => e.CreatedAt.Date == today),
+
+                ActiveRequestsCount = requests.Count(e => activeStatuses.Contains(e.Status)),
+
+                CompletedRequestsCount = requests.Count(e => e.Status == RequestStatus.Completed),
+
+                TotalRequestsCount = requests.Count()
+            };
+        }
+        #endregion
+
+
+        #region GetProviderEmergencyTypeStatsAsync
+        public async Task<ProviderEmergencyTypeStatsDto> GetProviderEmergencyTypeStatsAsync(int userId)
+        {
+            // 1. جلب مقدم الخدمة
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == userId);
+            if (provider == null) throw new Exception("Provider not found.");
+
+            // 2. جلب كل طلبات الطوارئ الخاصة بالورشة دي
+            var requests = await _unitOfWork.EmergencyRequests.FindAllAsync(
+                e => e.ServiceProviderId == provider.ServiceProviderId
+            );
+
+            // 3. تصنيف وعد الطلبات بناءً على الـ Enum اللي عملناه في الأول
+            return new ProviderEmergencyTypeStatsDto
+            {
+                Maintenance = requests.Count(e => e.RequestType == EmergencyRequestType.Maintenance),
+                DeadBattery = requests.Count(e => e.RequestType == EmergencyRequestType.Battery),
+                FlatTire = requests.Count(e => e.RequestType == EmergencyRequestType.FlatTire),
+                Accident = requests.Count(e => e.RequestType == EmergencyRequestType.Accident),
+                OutOfGas = requests.Count(e => e.RequestType == EmergencyRequestType.FuelShortage)
+            };
+        } 
+        #endregion
     }
 }

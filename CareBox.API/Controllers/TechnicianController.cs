@@ -40,6 +40,17 @@ namespace CareBox.API.Controllers
             catch (Exception ex) { return BadRequest(new { success = false, message = ex.Message }); }
         }
 
+        [HttpGet("my-Active-technicians")]
+        public async Task<IActionResult> GetMyActiveTechnicians()
+        {
+            try
+            {
+                var result = await _technicianService.GetMyActiveTechniciansAsync(GetUserId());
+                return Ok(new { success = true, data = result });
+            }
+            catch (Exception ex) { return BadRequest(new { success = false, message = ex.Message }); }
+        }
+
         [HttpPost("add-technician")]
         public async Task<IActionResult> Add([FromBody] CreateTechnicianDto dto)
         {

@@ -44,6 +44,20 @@ namespace CareBox.BLL.Services.ProviderServices
             });
         }
 
+        public async Task<IEnumerable<TechnicianResponseDto>> GetMyActiveTechniciansAsync(int userId)
+        {
+            int providerId = await GetProviderIdAsync(userId);
+            var technicians = await _unitOfWork.Technicians.FindAllAsync(t => t.ServiceProviderId == providerId&&t.IsAvailable==true);
+
+            return technicians.Select(t => new TechnicianResponseDto
+            {
+                TechnicianId = t.TechnicianId,
+                Name = t.Name,
+                PhoneNumber = t.PhoneNumber,
+                IsAvailable = t.IsAvailable
+            });
+        }
+
         public async Task<TechnicianResponseDto?> GetTechnicianByIdAsync(int userId, int technicianId)
         {
             int providerId = await GetProviderIdAsync(userId);
@@ -59,6 +73,8 @@ namespace CareBox.BLL.Services.ProviderServices
                 IsAvailable = t.IsAvailable
             };
         }
+
+       
 
         public async Task<bool> AddTechnicianAsync(int userId, CreateTechnicianDto dto)
         {

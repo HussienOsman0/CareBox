@@ -1,4 +1,5 @@
-﻿using CareBox.BLL.Services.DashboardServices.Interfaces;
+﻿using CareBox.BLL.Services.DashboardServices;
+using CareBox.BLL.Services.DashboardServices.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -57,7 +58,7 @@ namespace CareBox.API.Controllers
             {
                 var userId = GetCurrentUserId();
 
-                var data = await _dashboardService.GetTopRequestedServicesAsync(userId,count);
+                var data = await _dashboardService.GetTopRequestedServicesAsync(userId, count);
 
                 return Ok(new { success = true, data = data });
             }
@@ -130,9 +131,76 @@ namespace CareBox.API.Controllers
             {
                 return BadRequest(new { success = false, message = ex.Message });
             }
-        } 
+        }
         #endregion
 
 
+
+
+
+        #region GetProviderEarnings
+
+        [HttpGet("Provider/Earnings")]
+
+        public async Task<IActionResult> GetProviderEarnings()
+        {
+            try
+            {
+                // استخراج الـ UserId من الـ Token
+                var userId = GetCurrentUserId();
+
+                // جلب الإحصائيات
+                var result = await _dashboardService.GetProviderEarningsAsync(userId);
+
+                return Ok(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+        #endregion
+        #region GetProviderEmergencyStats
+        [HttpGet("Provider/EmergencyStats")]
+
+        public async Task<IActionResult> GetProviderEmergencyStats()
+        {
+            try
+            {
+                // استخراج الـ UserId من الـ Token
+                var userId = GetCurrentUserId();
+
+                // جلب الإحصائيات
+                var result = await _dashboardService.GetProviderEmergencyStatsAsync(userId);
+
+                return Ok(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+        #endregion
+
+        #region GetEmergencyTypesBreakdown
+        [HttpGet("Provider/EmergencyTypes-Breakdown")]
+        public async Task<IActionResult> GetEmergencyTypesBreakdown()
+        {
+            try
+            {
+                // استخراج الـ UserId
+                var userId = GetCurrentUserId();
+
+                // جلب الإحصائيات
+                var result = await _dashboardService.GetProviderEmergencyTypeStatsAsync(userId);
+
+                return Ok(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+        #endregion
     }
 }
