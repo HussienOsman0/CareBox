@@ -256,24 +256,26 @@ namespace CareBox.BLL.Services.ProductManagementService
         #region Get Positions By Product Name
         public async Task<ProductPositionsResponseDto> GetProductPositionsByNameAsync(string productName)
         {
-            // جلب كل المنتجات اللي بتحمل نفس الاسم (تجاهل حالة الأحرف)
+            // 1. جلب كل المنتجات اللي بتحمل نفس الاسم (تجاهل حالة الأحرف)
             var products = await _unitOfWork.Products.FindAllAsync(p => p.Name.ToLower() == productName.ToLower());
+
+            // 2. التحقق: هل المنتج ده أصلاً بيعتمد على اتجاه أفقي؟ (هل أي نسخة منه ليها قيمة؟)
+            bool hasHorizontal = products.Any(p => p.HorizontalPosition.HasValue);
+
+            // 3. التحقق: هل المنتج ده أصلاً بيعتمد على اتجاه رأسي؟
+            bool hasVertical = products.Any(p => p.VerticalPosition.HasValue);
 
             return new ProductPositionsResponseDto
             {
-                // استخراج الاتجاهات الأفقية المتاحة (بدون تكرار)
-                AvailableHorizontalPositions = products
-                    .Where(p => p.HorizontalPosition.HasValue)
-                    .Select(p => (int)p.HorizontalPosition.Value)
-                    .Distinct()
-                    .ToList(),
+                // لو المنتج ليه اتجاه أفقي، هات كل الاتجاهات الممكنة من الـ Enum (يمين وشمال)
+                AvailableHorizontalPositions = hasHorizontal
+                    ? Enum.GetValues(typeof(HorizontalPosition)).Cast<int>().ToList()
+                    : new List<int>(),
 
-                // استخراج الاتجاهات الرأسية المتاحة (بدون تكرار)
-                AvailableVerticalPositions = products
-                    .Where(p => p.VerticalPosition.HasValue)
-                    .Select(p => (int)p.VerticalPosition.Value)
-                    .Distinct()
-                    .ToList()
+                // لو المنتج ليه اتجاه رأسي، هات كل الاتجاهات الممكنة من الـ Enum (أمام وخلف / علوي وسفلي)
+                AvailableVerticalPositions = hasVertical
+                    ? Enum.GetValues(typeof(VerticalPosition)).Cast<int>().ToList()
+                    : new List<int>()
             };
         }
         #endregion
@@ -338,7 +340,7 @@ namespace CareBox.BLL.Services.ProductManagementService
                 .Select(p => new InventoryProductDto
                 {
                     ProductId = p.ProductId,
-                    Name = p.Name,
+                    Name = $"{p.Name} {(p.VerticalPosition.HasValue ? p.VerticalPosition.ToString() : "")} {(p.HorizontalPosition.HasValue ? p.HorizontalPosition.ToString() : "")}".TrimEnd(),
                     CategoryName = p.ProductCategory?.Name ?? "No Category",
                     Status = p.StockStatus.ToString(),
                     CurrentStock = p.StockQuantity,
@@ -433,7 +435,7 @@ namespace CareBox.BLL.Services.ProductManagementService
 
             // الفلترة بالاسم
             if (!string.IsNullOrWhiteSpace(request.ProductName))
-                query = query.Where(p => p.Name.ToLower().Contains(request.ProductName.ToLower()));
+                query = query.Where(p => p.Name.ToLower() == request.ProductName.ToLower());
 
             // الفلترة بالاتجاهات
             if (request.HorizontalPosition.HasValue)

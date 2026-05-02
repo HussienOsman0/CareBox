@@ -176,7 +176,10 @@ namespace CareBox.BLL.Services.InvoiceManagementService
                         (i.Order != null && i.Order.ServiceProviderId == provider.ServiceProviderId) ||
                         (i.EmergencyRequest != null && i.EmergencyRequest.ServiceProviderId == provider.ServiceProviderId)
                      ),
-                new[] { "InvoiceDetails", "Booking.Client", "Order.Client", "EmergencyRequest.Client", "Client" });
+                new[] { "InvoiceDetails",
+                        "Booking.Client.AppUser",
+                        "Order.Client.AppUser",
+                        "EmergencyRequest.Client.AppUser"});
 
 
             return invoices.OrderByDescending(i => i.IssueDate).Select(i => new ProviderInvoiceResponseDto

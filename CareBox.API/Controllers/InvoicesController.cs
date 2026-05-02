@@ -113,7 +113,7 @@ namespace CareBox.API.Controllers
 
         #region GetInvoiceByBookingId
         [HttpGet("GetInvoiceByBooking/{bookingId}")]
-        [Authorize(Roles = "CLIENT")] // الدالة دي متاحة لأي مستخدم مسجل دخوله (عميل أو مقدم خدمة)
+        [Authorize(Roles = "CLIENT,SERVICEPROVIDER")] // الدالة دي متاحة لأي مستخدم مسجل دخوله (عميل أو مقدم خدمة)
         public async Task<IActionResult> GetInvoiceByBookingId(long bookingId)
         {
             try
@@ -150,7 +150,7 @@ namespace CareBox.API.Controllers
 
         #region GetInvoiceByEmergencyRequestId
         [HttpGet("GetInvoiceByEmergencyRequestId/{EmergencyRequestId}")]
-        [Authorize(Roles = "CLIENT")]
+        [Authorize(Roles = "CLIENT,SERVICEPROVIDER")]
         public async Task<IActionResult> GetInvoiceByEmergencyRequestId(long EmergencyRequestId)
         {
             try

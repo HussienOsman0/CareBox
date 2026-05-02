@@ -6,5 +6,8 @@ using System.Threading.Tasks;
 
 namespace CareBox.DAL.Enums
 {
-    public enum VerticalPosition { Right = 1, Left = 2 }
+    public enum VerticalPosition {
+        Front = 1,
+        Rear = 2
+    }
 }

@@ -214,9 +214,9 @@ namespace CareBox.BLL.Services.ReviewServices
             var review = await _unitOfWork.Reviews.FindAsync(r => r.ReviewId == reviewId && r.ClientId == client.ClientID);
             if (review == null) throw new Exception("Review not found or you don't have permission to delete it.");
 
-            // 3. 💡 تطبيق قاعدة الـ 24 ساعة 
-            if ((DateTime.Now - review.CreatedAt).TotalHours > 24)
-                throw new Exception("You cannot delete a review after 24 hours of adding it.");
+            //// 3. 💡 تطبيق قاعدة الـ 24 ساعة 
+            //if ((DateTime.Now - review.CreatedAt).TotalHours > 24)
+            //    throw new Exception("You cannot delete a review after 24 hours of adding it.");
 
             // 4. الحذف
             _unitOfWork.Reviews.Delete(review);
