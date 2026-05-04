@@ -17,6 +17,8 @@ namespace CareBox.DAL.Models
         public string? Description { get; set; } 
         public decimal Price { get; set; }
 
+        public bool IsDeleted { get; set; } = false;
+
         // التعديل الجديد: Foreign Key للـ Category ويكون Nullable
         public int? ServiceCategoryId { get; set; }
         public virtual ServiceCategory? ServiceCategory { get; set; }

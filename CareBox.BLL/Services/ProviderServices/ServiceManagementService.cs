@@ -39,7 +39,7 @@ namespace CareBox.BLL.Services.ProviderServices
             var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.ServiceProviderId == userId);
             if (provider == null)
                 throw new Exception("Provider not found");
-            var services = await _unitOfWork.Services.FindAllAsync(s => s.ServiceProviderId == provider.ServiceProviderId&&s.ServiceCategoryId==null);
+            var services = await _unitOfWork.Services.FindAllAsync(s => s.ServiceProviderId == provider.ServiceProviderId&&s.ServiceCategoryId==null && !s.IsDeleted);
             if (services == null || !services.Any())
                 throw new Exception("No services found for this provider");
 
@@ -59,7 +59,7 @@ namespace CareBox.BLL.Services.ProviderServices
         public async Task<IEnumerable<ServiceDto>> GetMyServicesAsync(int userId)
         {
             var provider = await GetProviderByUserIdAsync(userId);
-            var services = await _unitOfWork.Services.FindAllAsync(s => s.ServiceProviderId == provider.ServiceProviderId);
+            var services = await _unitOfWork.Services.FindAllAsync(s => s.ServiceProviderId == provider.ServiceProviderId && !s.IsDeleted);
             if (services == null || !services.Any())
                 throw new Exception("No services found for this provider");
 
@@ -79,7 +79,7 @@ namespace CareBox.BLL.Services.ProviderServices
         {
             var provider = await GetProviderByUserIdAsync(userId);
 
-            var service = await _unitOfWork.Services.FindAsync(s => s.ServiceId == serviceId && s.ServiceProviderId == provider.ServiceProviderId);
+            var service = await _unitOfWork.Services.FindAsync(s => s.ServiceId == serviceId && s.ServiceProviderId == provider.ServiceProviderId && !s.IsDeleted);
 
             if (service == null)
                 throw new Exception("Service not found");
@@ -220,11 +220,14 @@ namespace CareBox.BLL.Services.ProviderServices
 
             var service = await _unitOfWork.Services.FindAsync(s => s.ServiceId == serviceId && s.ServiceProviderId == provider.ServiceProviderId);
 
-            if (service == null) return false;
+           
             if (service == null)
                 throw new Exception("Service not found.");
 
-            _unitOfWork.Services.Delete(service);
+            service.IsDeleted = true;
+            _unitOfWork.Services.Update(service);
+
+           
             await _unitOfWork.SaveAsync();
             return true;
         }
@@ -304,7 +307,7 @@ namespace CareBox.BLL.Services.ProviderServices
 
             // بنجيب الخدمات اللي تبع البروفايدر ده وكمان تبع الـ Category ده
             var services = await _unitOfWork.Services.FindAllAsync(
-                s => s.ServiceProviderId == prociderId && s.ServiceCategoryId == categoryId
+                s => s.ServiceProviderId == prociderId && s.ServiceCategoryId == categoryId && !s.IsDeleted
             );
 
             if (services == null || !services.Any())

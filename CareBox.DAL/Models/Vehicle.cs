@@ -18,9 +18,11 @@ namespace CareBox.DAL.Models
         //public VehicleType VehicleType     // removed
         public string Make { get; set; } 
         public string Model { get; set; } 
-        public short Year { get; set; } 
-        
+        public short Year { get; set; }
+
         public int Kilometers { get; set; }
+
+        public bool IsDeleted { get; set; } = false;
 
         //  added PlateNumber (new)
         public string PlateNumber { get; set; }

@@ -183,8 +183,11 @@ namespace CareBox.BLL.Services.ProductManagementService
 
             if (product == null) throw new Exception("Product not found or unauthorized.");
 
+            product.IsDeleted = true;
+            _unitOfWork.Products.Update(product);
+
             // 3. مسح المنتج
-            _unitOfWork.Products.Delete(product);
+
             return await _unitOfWork.SaveAsync() > 0;
         }
         #endregion
@@ -231,7 +234,7 @@ namespace CareBox.BLL.Services.ProductManagementService
         public async Task<CategoryFilterOptionsDto> GetCategoryFilterOptionsAsync(int categoryId)
         {
             // جلب المنتجات التابعة للقسم
-            var products = await _unitOfWork.Products.FindAllAsync(p => p.ProductCategoryId == categoryId);
+            var products = await _unitOfWork.Products.FindAllAsync(p => p.ProductCategoryId == categoryId && !p.IsDeleted);
 
             var names = products.Select(p => p.Name).Distinct().ToList();
 
@@ -291,7 +294,7 @@ namespace CareBox.BLL.Services.ProductManagementService
 
             // جلب المنتجات مع تضمين بيانات القسم (Category)
             var products = await _unitOfWork.Products.FindAllAsync(
-                p => p.ServiceProviderId == provider.ServiceProviderId,
+                p => p.ServiceProviderId == provider.ServiceProviderId && !p.IsDeleted,
                 new[] { "ProductCategory" }
             );
 
@@ -359,7 +362,7 @@ namespace CareBox.BLL.Services.ProductManagementService
             // 2. جلب جميع منتجات هذه الورشة
             // استخدمنا AsNoTracking أو جلبنا القائمة مباشرة لأننا نحتاج فقط لعمليات عد (Read-only)
             var products = await _unitOfWork.Products.FindAllAsync(
-                p => p.ServiceProviderId == provider.ServiceProviderId
+                p => p.ServiceProviderId == provider.ServiceProviderId && !p.IsDeleted
             );
 
             // 3. حساب الإحصائيات بناءً على الـ Enum
@@ -413,7 +416,7 @@ namespace CareBox.BLL.Services.ProductManagementService
             if (client == null) throw new Exception("Client not found");
 
             var products = await _unitOfWork.Products.FindAllAsync(
-                p => p.StockQuantity > 0,
+                p => p.StockQuantity > 0 && !p.IsDeleted,
                 new[] { "ServiceProvider", "ProductCategory" }
             );
 

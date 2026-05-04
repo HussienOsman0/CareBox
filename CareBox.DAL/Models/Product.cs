@@ -31,6 +31,8 @@ namespace CareBox.DAL.Models
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
 
+        public bool IsDeleted { get; set; } = false;
+
         //Enums
         public StockStatus StockStatus { get; set; }
         public ProductCondition Condition { get; set; }

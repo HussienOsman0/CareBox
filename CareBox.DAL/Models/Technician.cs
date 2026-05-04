@@ -18,6 +18,8 @@ namespace CareBox.DAL.Models
 
         public bool IsAvailable { get; set; } // 
 
+        public bool IsDeleted { get; set; } = false;
+
         public virtual ICollection<EmergencyRequest> EmergencyRequests { get; set; }
     }
 }

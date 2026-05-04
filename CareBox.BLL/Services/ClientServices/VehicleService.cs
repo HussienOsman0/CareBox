@@ -71,7 +71,7 @@ namespace CareBox.BLL.Services.ClientServices
         {
             var client =await GetClientByUserId(clientId);
 
-            var vehicles =await  _unitOfWork.Vehicles.FindAllAsync(v=>v.ClientId == client.ClientID);
+            var vehicles =await  _unitOfWork.Vehicles.FindAllAsync(v=>v.ClientId == client.ClientID && !v.IsDeleted);
             if (vehicles == null || !vehicles.Any())
                 throw new Exception("No vehicles found");
 
@@ -147,12 +147,12 @@ namespace CareBox.BLL.Services.ClientServices
             var client = await GetClientByUserId(clientId);
             var vehicle = await _unitOfWork.Vehicles.FindAsync(v => v.VehicleId == vehicleId && v.ClientId == client.ClientID);
             if (vehicle == null)
-                return false;
-            if (!string.IsNullOrEmpty(vehicle.CarImageUrl))
-            {
-                _fileService.DeleteFile(vehicle.CarImageUrl);
-            }
-            _unitOfWork.Vehicles.Delete(vehicle);
+                throw new Exception("Vehicle not found.");
+            // 👇 التعديل هنا: تحديث الحالة بدل المسح
+            vehicle.IsDeleted = true;
+            _unitOfWork.Vehicles.Update(vehicle);
+
+        
             await _unitOfWork.SaveAsync();
             return true;
         }

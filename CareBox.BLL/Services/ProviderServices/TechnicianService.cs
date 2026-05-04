@@ -33,7 +33,7 @@ namespace CareBox.BLL.Services.ProviderServices
         public async Task<IEnumerable<TechnicianResponseDto>> GetAllMyTechniciansAsync(int userId)
         {
             int providerId = await GetProviderIdAsync(userId);
-            var technicians = await _unitOfWork.Technicians.FindAllAsync(t => t.ServiceProviderId == providerId);
+            var technicians = await _unitOfWork.Technicians.FindAllAsync(t => t.ServiceProviderId == providerId && !t.IsDeleted);
 
             return technicians.Select(t => new TechnicianResponseDto
             {
@@ -47,7 +47,7 @@ namespace CareBox.BLL.Services.ProviderServices
         public async Task<IEnumerable<TechnicianResponseDto>> GetMyActiveTechniciansAsync(int userId)
         {
             int providerId = await GetProviderIdAsync(userId);
-            var technicians = await _unitOfWork.Technicians.FindAllAsync(t => t.ServiceProviderId == providerId&&t.IsAvailable==true);
+            var technicians = await _unitOfWork.Technicians.FindAllAsync(t => t.ServiceProviderId == providerId&&t.IsAvailable==true && !t.IsDeleted);
 
             return technicians.Select(t => new TechnicianResponseDto
             {
@@ -61,7 +61,7 @@ namespace CareBox.BLL.Services.ProviderServices
         public async Task<TechnicianResponseDto?> GetTechnicianByIdAsync(int userId, int technicianId)
         {
             int providerId = await GetProviderIdAsync(userId);
-            var t = await _unitOfWork.Technicians.FindAsync(t => t.TechnicianId == technicianId && t.ServiceProviderId == providerId);
+            var t = await _unitOfWork.Technicians.FindAsync(t => t.TechnicianId == technicianId && t.ServiceProviderId == providerId && !t.IsDeleted);
 
             if (t == null) return null;
 
@@ -120,8 +120,9 @@ namespace CareBox.BLL.Services.ProviderServices
             var technician = await _unitOfWork.Technicians.FindAsync(t => t.TechnicianId == technicianId && t.ServiceProviderId == providerId);
 
             if (technician == null) throw new Exception("Technician not found.");
-
-            _unitOfWork.Technicians.Delete(technician);
+            technician.IsDeleted = true;
+            _unitOfWork.Technicians.Update(technician);
+            
             return await _unitOfWork.SaveAsync() > 0;
         }
     }
