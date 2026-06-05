@@ -44,5 +44,7 @@ namespace CareBox.DAL.Models
 
         public DateTime CreatedAt { get; set; }
 
+        public ICollection<IgnoredEmergencyRequest> IgnoredRequests { get; set; } = new List<IgnoredEmergencyRequest>();
+
     }
 }

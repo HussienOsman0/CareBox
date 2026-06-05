@@ -11,8 +11,8 @@ namespace CareBox.DAL.Models
         public long BookingId { get; set; }
         public virtual Booking Booking { get; set; }
 
-        public int ServiceId { get; set; }
-        public virtual Service Service { get; set; }
+        public int? ServiceId { get; set; }
+        public virtual Service? Service { get; set; }
 
         // السعر الفعلي وقت الحجز (مهم جداً للفواتير)
         public decimal Price { get; set; }

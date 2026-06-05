@@ -14,8 +14,8 @@ namespace CareBox.DAL.Models
         public int ClientId { get; set; } 
         public virtual Client Client { get; set; }
 
-        public int VehicleId { get; set; } 
-        public virtual Vehicle Vehicle { get; set; }
+        public int? VehicleId { get; set; } 
+        public virtual Vehicle? Vehicle { get; set; }
 
         public int ServiceProviderId { get; set; } 
         public virtual ServiceProvider ServiceProvider { get; set; }

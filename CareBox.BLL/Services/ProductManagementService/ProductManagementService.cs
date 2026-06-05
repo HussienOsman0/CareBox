@@ -314,7 +314,7 @@ namespace CareBox.BLL.Services.ProductManagementService
             return filteredProducts.Select(p => new ProductResponseDto
             {
                 ProductId = p.ProductId,
-                Name = $"{p.Name} {(p.VerticalPosition.HasValue ? p.VerticalPosition.ToString() : "")} {(p.HorizontalPosition.HasValue ? p.HorizontalPosition.ToString() : "")}".TrimEnd(),
+                Name = $"{p.Make} {p.ForModel} {p.Name} {(p.VerticalPosition.HasValue ? p.VerticalPosition.ToString() : "")} {(p.HorizontalPosition.HasValue ? p.HorizontalPosition.ToString() : "")}".TrimEnd(),
                 ImageUrl = p.ProductImageUrl?? "No Image",
                 CategoryName = p.ProductCategory != null ? p.ProductCategory.Name : "No Category",
                 Condition = p.Condition.ToString(),
@@ -343,7 +343,7 @@ namespace CareBox.BLL.Services.ProductManagementService
                 .Select(p => new InventoryProductDto
                 {
                     ProductId = p.ProductId,
-                    Name = $"{p.Name} {(p.VerticalPosition.HasValue ? p.VerticalPosition.ToString() : "")} {(p.HorizontalPosition.HasValue ? p.HorizontalPosition.ToString() : "")}".TrimEnd(),
+                    Name = $"{p.Make} {p.ForModel} {p.Name} {(p.VerticalPosition.HasValue ? p.VerticalPosition.ToString() : "")} {(p.HorizontalPosition.HasValue ? p.HorizontalPosition.ToString() : "")}".TrimEnd(),
                     CategoryName = p.ProductCategory?.Name ?? "No Category",
                     Status = p.StockStatus.ToString(),
                     CurrentStock = p.StockQuantity,
@@ -457,7 +457,7 @@ namespace CareBox.BLL.Services.ProductManagementService
             var result = query.Select(p => new ProductSearchResultDto
             {   
                     ProductId = p.ProductId,
-                ProductName = $"{p.Name} {(p.VerticalPosition.HasValue ? p.VerticalPosition.ToString() : "")} {(p.HorizontalPosition.HasValue ? p.HorizontalPosition.ToString() : "")}".TrimEnd(),
+                ProductName = $"{p.Make} {p.ForModel} {p.Name} {(p.VerticalPosition.HasValue ? p.VerticalPosition.ToString() : "")} {(p.HorizontalPosition.HasValue ? p.HorizontalPosition.ToString() : "")}".TrimEnd(),
                 ProductImage = p.ProductImageUrl ?? "No Image",
                     ProviderName = p.ServiceProvider.Name,
                     Condition = p.Condition.ToString(),

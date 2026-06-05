@@ -30,23 +30,71 @@ namespace CareBox.BLL.Services.InvoiceManagementService
         #endregion
 
         #region put to Invoice
+        //public async Task<bool> AddCustomItemsToInvoiceAsync(int providerUserId, AddMultipleInvoiceItemsDto model)
+        //{
+        //    var provider = await GetProviderByUserIdAsync(providerUserId);
+
+        //    // 1. البحث عن الفاتورة باستخدام BookingId بدلاً من InvoiceId
+        //    var query = await _unitOfWork.Invoices.FindAllAsync(
+        //        i => i.BookingId == model.BookingId, // التغيير الجوهري هنا
+        //        new[] { "InvoiceDetails", "Booking", "Booking.ServiceProvider" }
+        //    );
+
+        //    var invoice = query.FirstOrDefault();
+
+        //    if (invoice == null)
+        //        throw new Exception("No invoice found for this booking.");
+
+        //    if (invoice.Booking?.ServiceProvider?.AppUserId != providerUserId)
+        //        throw new UnauthorizedAccessException("You are not authorized to edit this invoice.");
+
+        //    if (!invoice.IsDraft)
+        //        throw new Exception("Cannot add items. The invoice is final and no longer a draft.");
+
+        //    decimal totalAddedAmount = 0;
+
+        //    foreach (var item in model.Items)
+        //    {
+        //        var newDetail = new InvoiceDetail
+        //        {
+        //            ItemDescription = item.ItemDescription,
+        //            Price = item.Price
+        //        };
+
+        //        invoice.InvoiceDetails.Add(newDetail);
+        //        totalAddedAmount += item.Price;
+        //    }
+
+        //    // 5. تحديث السعر الإجمالي للفاتورة وللحجز أيضاً
+        //    invoice.TotalAmount += totalAddedAmount;
+        //    invoice.Booking.TotalPrice = invoice.TotalAmount; // تحديث سعر الحجز ليكون متطابقاً دائماً
+
+        //    // 6. حفظ التعديلات
+        //    await _unitOfWork.SaveAsync();
+
+        //    return true;
+        //}
+
         public async Task<bool> AddCustomItemsToInvoiceAsync(int providerUserId, AddMultipleInvoiceItemsDto model)
         {
-            var provider = await GetProviderByUserIdAsync(providerUserId);
+            // 1. استخدام model.BookingId كـ "جوكر" (ممكن يكون ID حجز أو ID طوارئ)
+            var referenceId = model.BookingId;
 
-            // 1. البحث عن الفاتورة باستخدام BookingId بدلاً من InvoiceId
+            // 2. البحث عن الفاتورة اللي مربوطة بالرقم ده سواء في عمود الـ BookingId أو الـ EmergencyRequestId
             var query = await _unitOfWork.Invoices.FindAllAsync(
-                i => i.BookingId == model.BookingId, // التغيير الجوهري هنا
-                new[] { "InvoiceDetails", "Booking", "Booking.ServiceProvider" }
+                i => i.BookingId == referenceId || i.EmergencyRequestId == referenceId,
+                new[] { "InvoiceDetails", "Booking", "Booking.ServiceProvider", "EmergencyRequest", "EmergencyRequest.ServiceProvider" }
             );
 
-            var invoice = query.FirstOrDefault();
+            // 3. فلترة ذكية في الميموري: 
+            // هنتأكد إن الفاتورة اللي رجعت تخص نفس الورشة (عشان لو تصادف إن رقم الحجز = رقم الطوارئ)
+            var invoice = query.FirstOrDefault(i =>
+                (i.Booking != null && i.Booking.ServiceProvider?.AppUserId == providerUserId) ||
+                (i.EmergencyRequest != null && i.EmergencyRequest.ServiceProvider?.AppUserId == providerUserId)
+            );
 
             if (invoice == null)
-                throw new Exception("No invoice found for this booking.");
-
-            if (invoice.Booking?.ServiceProvider?.AppUserId != providerUserId)
-                throw new UnauthorizedAccessException("You are not authorized to edit this invoice.");
+                throw new Exception("No authorized invoice found for this request.");
 
             if (!invoice.IsDraft)
                 throw new Exception("Cannot add items. The invoice is final and no longer a draft.");
@@ -65,9 +113,14 @@ namespace CareBox.BLL.Services.InvoiceManagementService
                 totalAddedAmount += item.Price;
             }
 
-            // 5. تحديث السعر الإجمالي للفاتورة وللحجز أيضاً
+            // 4. تحديث السعر الإجمالي للفاتورة
             invoice.TotalAmount += totalAddedAmount;
-            invoice.Booking.TotalPrice = invoice.TotalAmount; // تحديث سعر الحجز ليكون متطابقاً دائماً
+
+            // 5. تحديث السعر في الجدول الأب (هنشوف هو حجز ولا طوارئ ونحدثه)
+            if (invoice.Booking != null)
+                invoice.Booking.TotalPrice = invoice.TotalAmount;
+
+           
 
             // 6. حفظ التعديلات
             await _unitOfWork.SaveAsync();
@@ -232,6 +285,7 @@ namespace CareBox.BLL.Services.InvoiceManagementService
                 ProviderType = invoice.Booking?.ServiceProvider?.ProviderType?.TypeName ?? "N/A",
                 Items = invoice.InvoiceDetails.Select(d => new InvoiceItemDto
                 {
+
                     ItemDescription = d.ItemDescription,
                     Price = d.Price
                 }).ToList()
@@ -350,6 +404,7 @@ namespace CareBox.BLL.Services.InvoiceManagementService
                 ClientName = invoice.Booking?.Client?.FullName ?? "N/A",
                 Items = invoice.InvoiceDetails.Select(d => new InvoiceItemDto
                 {
+                    ItemId = d.InvoiceDetailId,
                     ItemDescription = d.ItemDescription,
                     Price = d.Price
                 }).ToList()

@@ -41,6 +41,8 @@ namespace CareBox.BLL.Repositories.Interfaces
 
         // Emergency & Reviews Module
         IGenericRepository<EmergencyRequest> EmergencyRequests { get; }
+
+        IGenericRepository<IgnoredEmergencyRequest> IgnoredEmergencyRequests { get; }
         IGenericRepository<Review> Reviews { get; }
 
         // Car Marketplace Module

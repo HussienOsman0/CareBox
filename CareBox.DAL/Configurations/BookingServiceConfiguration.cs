@@ -29,7 +29,7 @@ namespace CareBox.DAL.Configurations
             builder.HasOne(bs => bs.Service)
                    .WithMany(s => s.BookingServices)
                    .HasForeignKey(bs => bs.ServiceId)
-                   .OnDelete(DeleteBehavior.Restrict); // نمنع مسح خدمة لو مربوطة بحجز سابق
+                   .OnDelete(DeleteBehavior.SetNull); // نمنع مسح خدمة لو مربوطة بحجز سابق
         }
     }
 }

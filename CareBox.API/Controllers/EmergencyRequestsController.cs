@@ -127,9 +127,10 @@ namespace CareBox.API.Controllers
         [HttpGet("pending-requests")]
         public async Task<IActionResult> GetPendingRequests()
         {
+            var userId = GetCurrentUserId();
             try
             {
-                var requests = await _emergencyService.GetPendingRequestsAsync();
+                var requests = await _emergencyService.GetPendingRequestsAsync(userId);
 
                 if (requests == null || !requests.Any())
                 {
@@ -146,7 +147,7 @@ namespace CareBox.API.Controllers
         }
         #endregion
 
-        #region AcceptRequest
+        #region AcceptRequest and RejectRequest
         [HttpPost("Accept-AcceptRequest")]
         [Authorize(Roles = "SERVICEPROVIDER")]
         public async Task<IActionResult> Accept([FromBody] AcceptRequestDto dto)
@@ -164,8 +165,17 @@ namespace CareBox.API.Controllers
         [Authorize(Roles = "SERVICEPROVIDER")]
         public async Task<IActionResult> Reject(long requestId)
         {
-            // الرفض هنا مجرد "تجاهل" من الورشة، الطلب يفضل Pending للباقي
-            return Ok(new { success = true, message = "تم تجاهل الطلب." });
+            try
+            {
+                var userId = GetCurrentUserId(); // الدالة اللي بتجيب الـ ID من التوكن عندك
+                await _emergencyService.RejectRequestAsync(userId, requestId);
+
+                return Ok(new { success = true, message = "The effect was ignored." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
 
         #endregion

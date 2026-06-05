@@ -258,10 +258,14 @@ namespace CareBox.BLL.Services.EmergencyService
 
 
         #region GetPendingRequestsAsync
-        public async Task<IEnumerable<EmergencyBroadcastDto>> GetPendingRequestsAsync()
+        public async Task<IEnumerable<EmergencyBroadcastDto>> GetPendingRequestsAsync(int userId)
         {
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == userId);
+            if (provider == null) throw new Exception("Provider not found.");
+
             var pending = await _unitOfWork.EmergencyRequests.FindAllAsync(
-                e => e.Status == DAL.Enums.RequestStatus.Pending,
+                e => e.Status == DAL.Enums.RequestStatus.Pending&&
+                !e.IgnoredRequests.Any(ir => ir.ServiceProviderId == provider.ServiceProviderId),
                 new[] { "Client.AppUser", "Vehicle" }
             );
 
@@ -352,6 +356,30 @@ namespace CareBox.BLL.Services.EmergencyService
             }
         }
 
+        #endregion
+
+        #region RejectRequestAsync
+        public async Task<bool> RejectRequestAsync(int userId, long requestId)
+        {
+            var provider = await _unitOfWork.ServiceProviders.FindAsync(p => p.AppUserId == userId);
+            if (provider == null) throw new Exception("Provider not found.");
+
+            // نتأكد إنها مش متسجلة قبل كده عشان ميضربش إيرور
+            var alreadyIgnored = await _unitOfWork.IgnoredEmergencyRequests.FindAsync(
+                ir => ir.EmergencyRequestId == requestId && ir.ServiceProviderId == provider.ServiceProviderId);
+
+            if (alreadyIgnored == null)
+            {
+                await _unitOfWork.IgnoredEmergencyRequests.AddAsync(new IgnoredEmergencyRequest
+                {
+                    EmergencyRequestId = requestId,
+                    ServiceProviderId = provider.ServiceProviderId
+                });
+                await _unitOfWork.SaveAsync();
+            }
+
+            return true;
+        } 
         #endregion
 
 

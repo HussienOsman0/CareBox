@@ -11,8 +11,9 @@ namespace CareBox.BLL.Services.EmergencyService.Interface
     {
         Task<EmergencyBroadcastDto> CreateRequestAsync(int userId, CreateEmergencyRequestDto dto);
 
-        Task<IEnumerable<EmergencyBroadcastDto>> GetPendingRequestsAsync();
+        Task<IEnumerable<EmergencyBroadcastDto>> GetPendingRequestsAsync(int userId);
         Task<bool> AcceptRequestAsync(int userId, AcceptRequestDto dto);
+        Task<bool> RejectRequestAsync(int userId, long requestId);
 
         Task<EmergencyTrackingResponseDto> GetTrackingDetailsAsync(int userId, long requestId);
         Task<IEnumerable<ClientEmergencyRequestResponseDto>> GetClientEmergencyRequestsAsync(int userId, string? filter = null);

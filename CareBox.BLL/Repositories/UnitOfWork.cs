@@ -50,6 +50,7 @@ namespace CareBox.BLL.Repositories
 
             // Emergency & Reviews
             EmergencyRequests = new GenericRepository<EmergencyRequest>(_context);
+            IgnoredEmergencyRequests = new GenericRepository<IgnoredEmergencyRequest>(_context);
             Reviews = new GenericRepository<Review>(_context);
 
             // Marketplace
@@ -87,6 +88,9 @@ namespace CareBox.BLL.Repositories
         public IGenericRepository<CartItem> CartItems { get; private set; }
 
         public IGenericRepository<EmergencyRequest> EmergencyRequests { get; }
+
+        public IGenericRepository<IgnoredEmergencyRequest> IgnoredEmergencyRequests { get; private set; }
+
         public IGenericRepository<Review> Reviews { get; }
 
         public IGenericRepository<Listing> Listings { get; }

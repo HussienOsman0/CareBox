@@ -54,6 +54,8 @@ namespace CareBox.DAL.Contexts
 
         #region Emergency & Reviews Module
         public DbSet<EmergencyRequest> EmergencyRequests { get; set; }
+
+        public DbSet<IgnoredEmergencyRequest> IgnoredEmergencyRequests { get; set; }
         public DbSet<Review> Reviews { get; set; }
         #endregion
 
